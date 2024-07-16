@@ -1,6 +1,7 @@
 use std::io;
 
 use crate::config::ExampleConfig;
+use actix_cors::Cors;
 use actix_web::{get, web, App, Error, HttpResponse, HttpServer, Responder};
 use confik::{Configuration as _, EnvSource};
 use deadpool_postgres::{Client, Pool};
@@ -57,6 +58,7 @@ async fn main() -> io::Result<()> {
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(Cors::permissive())
             .app_data(web::Data::new(pool.clone()))
             .service(get_team)
             .service(

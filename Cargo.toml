@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4"
+actix-cors = "0.7.0"
 confik = "0.11"
 deadpool-postgres = { version = "0.12", features = ["serde"] }
 derive_more = "0.99.7"

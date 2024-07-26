@@ -9,3 +9,16 @@ pub struct User {
     pub last_name: String,
     pub username: String,
 }
+
+#[derive(Deserialize, PostgresMapper, Serialize)]
+#[pg_mapper(table = "teams")]
+pub struct Team {
+    pub team_name: String,
+}
+
+#[derive(Deserialize, PostgresMapper, Serialize)]
+#[pg_mapper(table = "userTeam")]
+pub struct UserTeam {
+    pub userid: i64,
+    pub teamid: i64,
+}

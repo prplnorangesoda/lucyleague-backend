@@ -1,3 +1,9 @@
+## Docker setup
+
+`$ docker compose up`
+
+## Non docker
+
 To initiate the database:
 
 1. createuser -P user  
@@ -9,17 +15,9 @@ To initiate the database:
     Create a database
 
 3. Initialize the database
-   Clear previous database information with a cascading drop all tables:
-   `psql -f sql/testing_schema.sql db`
+   `psql -f sql/initdb.sql db`
 
-   Initialize a database  
-   This step can be repeated as it drops and recreates the schema `testing` which is used within the database.
-
-4. ```sql
-   GRANT ALL PRIVILEGES ON SCHEMA testing TO user;
-   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA testing TO user;
-   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA testing TO user;
-   ```
+4. Grant privileges to user
 
 5. Create .env file (with .env.example)
 

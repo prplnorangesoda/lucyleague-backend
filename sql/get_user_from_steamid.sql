@@ -1,1 +1,1 @@
-SELECT $table_fields FROM testing.users WHERE steamid=$1;
+SELECT $table_fields FROM users WHERE steamid=$1;

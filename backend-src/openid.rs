@@ -52,7 +52,7 @@ impl SteamOpenId {
         let return_part = format!("openid.return_to={0}", encode(&self.config.return_url));
         let realm = format!(
             "openid.realm=http%3A%2F%2F{0}:{1}%2F",
-            &self.server_config.server_addr, &self.server_config.server_port
+            &self.server_config.openid_realm, &self.server_config.server_port
         );
         let mode = format!(
             "openid.mode={0}",

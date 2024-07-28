@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Default, Configuration, Clone)]
 pub struct ExampleConfig {
+    pub openid_realm: String,
     pub server_addr: String,
     pub server_port: u16,
     #[confik(from = DbConfig)]

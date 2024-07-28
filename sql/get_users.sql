@@ -1,1 +1,1 @@
-SELECT $table_fields FROM testing.users;
+SELECT $table_fields FROM users;

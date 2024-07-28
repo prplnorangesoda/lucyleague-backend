@@ -20,6 +20,7 @@ mod openid;
 use self::errors::MyError;
 
 pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
+    println!("GET request at /users");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let users = db::get_users(&client).await?;
@@ -44,8 +45,9 @@ pub async fn add_user(
     Ok(HttpResponse::Ok().json(new_user))
 }
 
-#[get("/teams/{team_id}")]
+#[get("/api/teams/{team_id}")]
 async fn get_team(path: web::Path<u32>) -> impl Responder {
+    println!("GET request at /teams/id");
     let team_id = path.into_inner();
     println!("Getting info for team id {team_id}");
     if team_id != 3 {
@@ -56,6 +58,7 @@ async fn get_team(path: web::Path<u32>) -> impl Responder {
 
 #[get("/login")]
 async fn get_openid(data: web::Data<AppState>) -> impl Responder {
+    println!("GET request at /login");
     HttpResponse::Found()
         .insert_header(("Location", data.into_inner().steam_auth_url.clone()))
         .body("Redirecting...")
@@ -80,6 +83,7 @@ async fn openid_landing(
     query: web::Query<HashMap<String, String>>,
     state: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
+    println!("GET request at /login/landing");
     let inner = query.into_inner();
     // let mut keyValuesString = String::new();
     // for (key, val) in inner.iter() {
@@ -149,12 +153,13 @@ async fn main() -> io::Result<()> {
 
     let steam_config = openid::SteamOpenIdConfig::new(&format!(
         "http://{0}:{1}/login/landing",
-        config.server_addr, config.server_port
+        config.openid_realm, config.server_port
     ));
 
     let steam_setup = openid::SteamOpenId::new(steam_config, config.clone());
     let auth_url = steam_setup.get_auth_url();
     let pool = config.pg.create_pool(None, NoTls).unwrap();
+    println!("{config:?}");
 
     let server = HttpServer::new(move || {
         App::new()
@@ -165,7 +170,7 @@ async fn main() -> io::Result<()> {
             }))
             .service(get_team)
             .service(
-                web::resource("/users")
+                web::resource("/api/users")
                     .route(web::get().to(get_users))
                     .route(web::post().to(add_user)),
             )

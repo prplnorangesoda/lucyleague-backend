@@ -1,0 +1,27 @@
+services:
+  server:
+    build: .
+    ports:
+      - "$SERVER_PORT:$SERVER_PORT"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["./target/release/lucyleague"]
+
+  db:
+    image: postgres
+    container_name: postgres_db
+    restart: always
+    environment:
+      PGUSER: $PG__USER
+      POSTGRES_USER: $PG__USER
+      POSTGRES_PASSWORD: $PG__PASSWORD
+    ports:
+      - ${PG__PORT:-5432}:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./sql/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql

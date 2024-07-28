@@ -1,10 +1,10 @@
 [package]
-name = "backend"
+name = "lucyleague"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "server"
+name = "lucyleague"
 path = "backend-src/main.rs"
 
 [dependencies]

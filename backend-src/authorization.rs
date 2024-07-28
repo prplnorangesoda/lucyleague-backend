@@ -4,7 +4,7 @@ use chrono::{DateTime, Months};
 use deadpool_postgres::Client;
 use randomizer::Randomizer;
 
-use crate::db::{get_authorization_from_user, register_authorization};
+use crate::db::register_authorization;
 use crate::errors::MyError;
 use crate::models::{Authorization, User};
 
@@ -12,8 +12,7 @@ pub async fn get_authorization_for_user(
     dbclient: &Client,
     user: &User,
 ) -> Result<Authorization, MyError> {
-    get_authorization_from_user(dbclient, user).await;
-    create_authorization_for_user(&dbclient, &user).await
+    crate::db::get_authorization_for_user(dbclient, user).await
 }
 
 pub async fn create_authorization_for_user(

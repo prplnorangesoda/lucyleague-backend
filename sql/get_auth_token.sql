@@ -1,1 +1,1 @@
-SELECT $table_fields FROM testing.authorization WHERE userid=$1;
+SELECT $fields FROM testing.authorization WHERE userid=$1;

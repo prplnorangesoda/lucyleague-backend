@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
 use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
-use tokio_postgres::types::Timestamp;
 
 use crate::{
+    authorization::create_authorization_for_user,
     errors::MyError,
     models::{Authorization, MiniUser, User},
 };
@@ -23,7 +23,28 @@ pub async fn get_user_from_steamid(client: &Client, steamid: &str) -> Result<Use
         .ok_or(MyError::NotFound)
 }
 
-pub async fn get_authorization_from_user(client: &Client, user: &User) {}
+pub async fn get_authorization_for_user(
+    client: &Client,
+    user: &User,
+) -> Result<Authorization, MyError> {
+    let _stmt = include_str!("../sql/get_auth_token.sql");
+    let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
+    let stmt = client.prepare(&_stmt).await?;
+
+    if let Ok(some) = client
+        .query(&stmt, &[&user.id])
+        .await?
+        .iter()
+        .map(|row| Authorization::from_row_ref(row).unwrap())
+        .collect::<Vec<Authorization>>()
+        .pop()
+        .ok_or(MyError::NotFound)
+    {
+        Ok(some)
+    } else {
+        create_authorization_for_user(client, user).await
+    }
+}
 
 pub async fn register_authorization(
     client: &Client,

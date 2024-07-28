@@ -1,6 +1,6 @@
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
-use actix_web::{get, web, App, Error, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
 use authorization::get_authorization_for_user;
 use confik::{Configuration as _, EnvSource};
 use db::get_user_from_steamid;
@@ -109,7 +109,12 @@ async fn openid_landing(
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let auth = match get_user_from_steamid(&client, &steamid).await {
-        Ok(user) => get_authorization_for_user(&client, &user).await,
+        Ok(user) => match get_authorization_for_user(&client, &user).await {
+            Ok(auth) => auth,
+            Err(_) => {
+                return Ok(HttpResponse::InternalServerError().body("500 Internal Server Error"))
+            }
+        },
         Err(err) => {
             if let MyError::NotFound = err {
                 return Ok(HttpResponse::NotFound().body("404 Not Found"));
@@ -118,7 +123,15 @@ async fn openid_landing(
             return Err(err.into());
         }
     };
-    Ok(HttpResponse::Ok().body(format!("{auth:?}")))
+    Ok(HttpResponse::Ok()
+        .append_header((
+            "Set-Cookie",
+            format!(
+                "auth-token={0}; Expires={1}; SameSite=Lax; Path=/",
+                auth.token, auth.expires
+            ),
+        ))
+        .body(format!("{auth:?}")))
 }
 
 pub struct AppState {
@@ -158,6 +171,11 @@ async fn main() -> io::Result<()> {
             )
             .service(get_openid)
             .service(openid_landing)
+            .service(
+                actix_files::Files::new("/", "./static")
+                    .show_files_listing()
+                    .index_file("index.html"),
+            )
     })
     .bind((config.server_addr.clone(), config.server_port))?
     .run();

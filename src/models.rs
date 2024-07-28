@@ -1,7 +1,6 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use tokio_pg_mapper_derive::PostgresMapper;
-use tokio_postgres::types::Timestamp;
 
 #[derive(Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "users")]
@@ -37,5 +36,5 @@ pub struct UserTeam {
 pub struct Authorization {
     pub userid: i64,
     pub token: String,
-    pub expires: DateTime<chrono::offset::Utc>,
+    pub expires: DateTime<chrono::Utc>,
 }

@@ -24,6 +24,6 @@ CREATE TABLE testing.userTeam (
 CREATE TABLE testing.authorization (
 	userid BIGSERIAL NOT NULL,
 	token VARCHAR(50) NOT NULL,
-	expires TIMESTAMP NOT NULL,
+	expires TIMESTAMPTZ NOT NULL,
 	CONSTRAINT FK_authorization_user FOREIGN KEY (userid) references testing.users(id)
 )

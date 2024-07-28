@@ -3,9 +3,10 @@ CREATE SCHEMA testing;
 
 CREATE TABLE testing.users (
 	id BIGSERIAL PRIMARY KEY,
-	steamid BIGINT,
+	steamid VARCHAR(50) UNIQUE NOT NULL,
 	username VARCHAR(50) UNIQUE NOT NULL,
-	UNIQUE (username)
+	UNIQUE (username),
+	UNIQUE (steamid)
 );
 
 CREATE TABLE testing.teams (
@@ -19,3 +20,10 @@ CREATE TABLE testing.userTeam (
 	CONSTRAINT FK_userTeam_user FOREIGN KEY (userid) references testing.users(id),
 	CONSTRAINT FK_userTeam_team FOREIGN KEY (teamid) references testing.teams(id)
 );
+
+CREATE TABLE testing.authorization (
+	userid BIGSERIAL NOT NULL,
+	token VARCHAR(50) NOT NULL,
+	expires TIMESTAMP NOT NULL,
+	CONSTRAINT FK_authorization_user FOREIGN KEY (userid) references testing.users(id)
+)

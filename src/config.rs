@@ -1,9 +1,10 @@
 use confik::Configuration;
 use serde::Deserialize;
 
-#[derive(Debug, Default, Configuration)]
+#[derive(Debug, Default, Configuration, Clone)]
 pub struct ExampleConfig {
     pub server_addr: String,
+    pub server_port: u16,
     #[confik(from = DbConfig)]
     pub pg: deadpool_postgres::Config,
 }

@@ -9,11 +9,12 @@ Remember to set your PG\_\_HOST in .env to `db`.
 To initiate the database:
 
 1. createuser -P user  
-   `CREATE USER user WITH PASSWORD 'password';`  
+   SQL: `CREATE USER user WITH PASSWORD 'password';`  
     Create a user (optional)
 
-2. createdb -O user db  
-   `CREATE DATABASE db OWNER user;`  
+2. createdb -O user db
+
+   SQL: `CREATE DATABASE db OWNER user;`  
     Create a database
 
 3. Initialize the database

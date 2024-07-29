@@ -3,7 +3,6 @@ use actix_cors::Cors;
 use actix_web::{get, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
 use authorization::get_authorization_for_user;
 use confik::{Configuration as _, EnvSource};
-use db::get_user_from_steamid;
 use deadpool_postgres::{Client, Pool};
 use dotenvy::dotenv;
 use models::MiniUser;
@@ -18,6 +17,28 @@ mod models;
 mod openid;
 
 use self::errors::MyError;
+
+#[get("/api/user/steamid/{steamid}")]
+pub async fn get_user_from_steamid(
+    state: web::Data<AppState>,
+    steamid: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    println!("GET request at /api/user/steamid/{steamid}");
+    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+
+    let user_res = db::get_user_from_steamid(&client, &steamid).await;
+
+    match user_res {
+        Ok(user) => Ok(HttpResponse::Ok().json(user)),
+        Err(err) => {
+            if let MyError::NotFound = err {
+                Ok(HttpResponse::NotFound().body("404 Not Found"))
+            } else {
+                Err(err.into())
+            }
+        }
+    }
+}
 
 pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     println!("GET request at /users");
@@ -112,7 +133,7 @@ async fn openid_landing(
     println!("Openid landing received from steamid: {steamid}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
-    let auth = match get_user_from_steamid(&client, &steamid).await {
+    let auth = match db::get_user_from_steamid(&client, &steamid).await {
         Ok(user) => match get_authorization_for_user(&client, &user).await {
             Ok(auth) => auth,
             Err(_) => {
@@ -121,13 +142,14 @@ async fn openid_landing(
         },
         Err(err) => {
             if let MyError::NotFound = err {
-                return Ok(HttpResponse::NotFound().body("404 Not Found"));
+                return Ok(HttpResponse::NotFound()
+                    .body("Could not find a user that corresponds with your identity"));
             }
             println!("user not found with steamid: {steamid}; error: {err}");
             return Err(err.into());
         }
     };
-    Ok(HttpResponse::Ok()
+    Ok(HttpResponse::Found()
         .append_header((
             "Set-Cookie",
             format!(
@@ -135,6 +157,7 @@ async fn openid_landing(
                 auth.token, auth.expires
             ),
         ))
+        .append_header(("Location", "/home"))
         .body(format!("{auth:?}")))
 }
 
@@ -144,6 +167,12 @@ pub struct AppState {
 }
 #[actix_web::main]
 async fn main() -> io::Result<()> {
+    std::path::Path::new("./lucyleague-frontend/static")
+        .try_exists()
+        .expect(
+            "Could not find ./lucyleague-frontend/static. Did you compile the frontend? Check pwd.",
+        );
+
     dotenv().expect("Error loading .env file");
 
     let config = ExampleConfig::builder()
@@ -169,6 +198,7 @@ async fn main() -> io::Result<()> {
                 steam_auth_url: auth_url.clone(),
             }))
             .service(get_team)
+            .service(get_user_from_steamid)
             .service(
                 web::resource("/api/users")
                     .route(web::get().to(get_users))
@@ -177,7 +207,7 @@ async fn main() -> io::Result<()> {
             .service(get_openid)
             .service(openid_landing)
             .service(
-                actix_files::Files::new("/", "./static")
+                actix_files::Files::new("/", "./lucyleague-frontend/static")
                     .show_files_listing()
                     .index_file("index.html"),
             )

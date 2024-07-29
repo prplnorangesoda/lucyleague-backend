@@ -2,6 +2,8 @@
 
 `$ docker compose up`
 
+Remember to set your PG\_\_HOST in .env to `db`.
+
 ## Non docker
 
 To initiate the database:

@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
 	id BIGSERIAL PRIMARY KEY,
 	steamid VARCHAR(50) UNIQUE NOT NULL,
 	username VARCHAR(50) UNIQUE NOT NULL,
-	admin UNIQUE BOOLEAN NOT NULL,
+	is_admin BOOLEAN DEFAULT false,
 	UNIQUE (username),
 	UNIQUE (steamid)
 );
@@ -17,6 +17,15 @@ CREATE TABLE IF NOT EXISTS userTeam (
 	teamid BIGSERIAL NOT NULL,
 	CONSTRAINT FK_userTeam_user FOREIGN KEY (userid) references users(id),
 	CONSTRAINT FK_userTeam_team FOREIGN KEY (teamid) references teams(id)
+);
+
+CREATE TABLE IF NOT EXISTS games (
+	id BIGSERIAL NOT NULL,
+	title VARCHAR(50),
+	teamhomeid BIGSERIAL NOT NULL,
+	teamawayid BIGSERIAL NOT NULL,
+	CONSTRAINT FK_game_home FOREIGN KEY (teamhomeid) references teams(id),
+	CONSTRAINT FK_game_away FOREIGN KEY (teamawayid) references teams(id)
 );
 
 CREATE TABLE IF NOT EXISTS authorizations (

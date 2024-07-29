@@ -1,3 +1,3 @@
-INSERT INTO users(steamid, username)
-VALUES ($1, $2)
+INSERT INTO users(steamid, username, is_admin)
+VALUES ($1, $2, false)
 RETURNING $table_fields;

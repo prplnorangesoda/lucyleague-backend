@@ -1,4 +1,4 @@
 hide.txt
 .env
-/static
-/target
+static/
+target/

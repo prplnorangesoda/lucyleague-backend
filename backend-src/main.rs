@@ -1,6 +1,6 @@
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
-use actix_web::{get, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, Error, HttpResponse, HttpServer, Responder};
 use authorization::get_authorization_for_user;
 use confik::{Configuration as _, EnvSource};
 use deadpool_postgres::{Client, Pool};
@@ -167,11 +167,12 @@ pub struct AppState {
 }
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    std::path::Path::new("./lucyleague-frontend/static")
+    if !std::path::Path::new("./lucyleague-frontend/static")
         .try_exists()
-        .expect(
-            "Could not find ./lucyleague-frontend/static. Did you compile the frontend? Check pwd.",
-        );
+        .expect("Could not check if frontend path exists",)
+    {
+        panic!("Could not find lucyleague-frontend/static. Did you compile the frontend submodule?")
+    };
 
     dotenv().expect("Error loading .env file");
 

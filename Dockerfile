@@ -17,5 +17,6 @@ RUN cargo build --release
 COPY .env /tmp/lucyleague/.env
 EXPOSE 8080
 
+RUN mkdir lucyleague-frontend
 COPY ./lucyleague-frontend/static ./lucyleague-frontend/static
 CMD ["./target/release/lucyleague"]

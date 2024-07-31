@@ -1,8 +1,10 @@
+// Initial configuration for the server.
 use confik::Configuration;
 use serde::Deserialize;
 
 #[derive(Debug, Default, Configuration, Clone)]
 pub struct ExampleConfig {
+    pub steam_api_key: String,
     pub openid_realm: String,
     pub server_addr: String,
     pub server_port: u16,

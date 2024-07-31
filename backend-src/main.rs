@@ -1,4 +1,6 @@
+// Main execution and routes.
 use crate::config::ExampleConfig;
+use crate::models::User;
 use actix_cors::Cors;
 use actix_web::{get, web, App, Error, HttpResponse, HttpServer, Responder};
 use authorization::get_authorization_for_user;
@@ -15,8 +17,10 @@ mod db;
 mod errors;
 mod models;
 mod openid;
+mod steamapi;
 
 use self::errors::MyError;
+use self::steamapi::PlayerSummaryAccess;
 
 #[get("/api/user/steamid/{steamid}")]
 pub async fn get_user_from_steamid(
@@ -64,6 +68,24 @@ pub async fn add_user(
     let new_user = db::add_user(&client, user_info).await?;
 
     Ok(HttpResponse::Ok().json(new_user))
+}
+
+pub async fn add_user_with_steamid(
+    state: &web::Data<AppState>,
+    db_client: &Client,
+    steamid: &str,
+) -> Result<User, MyError> {
+    let steam_user_access_level = steamapi::get_user_summary(&state.steam_api_key, steamid).await?;
+
+    // hacky oneliner: extract public information regardless of return type
+    let (PlayerSummaryAccess::All { public, .. } | PlayerSummaryAccess::Private { public }) =
+        steam_user_access_level;
+    let user = MiniUser {
+        steamid: public.steamid.to_string(),
+        username: public.personaname,
+    };
+
+    db::add_user(db_client, user).await
 }
 
 #[get("/api/teams/{team_id}")]
@@ -134,19 +156,19 @@ async fn openid_landing(
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let auth = match db::get_user_from_steamid(&client, &steamid).await {
+        // there is a user corresponding
         Ok(user) => match get_authorization_for_user(&client, &user).await {
             Ok(auth) => auth,
             Err(_) => {
                 return Ok(HttpResponse::InternalServerError().body("500 Internal Server Error"))
             }
         },
-        Err(err) => {
-            if let MyError::NotFound = err {
-                return Ok(HttpResponse::NotFound()
-                    .body("Could not find a user that corresponds with your identity"));
-            }
-            println!("user not found with steamid: {steamid}; error: {err}");
-            return Err(err.into());
+        // user wasn't found
+        Err(_) => {
+            let user: User = add_user_with_steamid(&state, &client, &steamid)
+                .await
+                .expect("User addition should not fail");
+            get_authorization_for_user(&client, &user).await?
         }
     };
     Ok(HttpResponse::Found()
@@ -164,12 +186,13 @@ async fn openid_landing(
 pub struct AppState {
     pool: Pool,
     steam_auth_url: String,
+    steam_api_key: String,
 }
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     if !std::path::Path::new("./lucyleague-frontend/static")
         .try_exists()
-        .expect("Could not check if frontend path exists",)
+        .expect("Could not check if frontend path exists")
     {
         panic!("Could not find lucyleague-frontend/static. Did you compile the frontend submodule?")
     };
@@ -183,7 +206,7 @@ async fn main() -> io::Result<()> {
 
     let steam_config = openid::SteamOpenIdConfig::new(&format!(
         "http://{0}:{1}/login/landing",
-        config.openid_realm, config.server_port
+        &config.openid_realm, &config.server_port
     ));
 
     let steam_setup = openid::SteamOpenId::new(steam_config, config.clone());
@@ -197,6 +220,7 @@ async fn main() -> io::Result<()> {
             .app_data(web::Data::new(AppState {
                 pool: pool.clone(),
                 steam_auth_url: auth_url.clone(),
+                steam_api_key: config.steam_api_key.clone(),
             }))
             .service(get_team)
             .service(get_user_from_steamid)

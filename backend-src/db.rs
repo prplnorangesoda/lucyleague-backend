@@ -1,3 +1,4 @@
+// Code that acts as a wrapper for database values.
 use chrono::{DateTime, Utc};
 use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
@@ -53,6 +54,7 @@ pub async fn register_authorization(
     expiry: DateTime<Utc>,
 ) -> Result<Authorization, MyError> {
     let _stmt = include_str!("../sql/register_auth_token.sql");
+    // $table_fields didn't work with this for some reason when i tested it
     let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
     println!("{}", &_stmt);
     println!("{}, {}", &user.id, &token);

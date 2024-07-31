@@ -1,3 +1,4 @@
+// Code relating to the Authorization model - generation, etc.
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Months};

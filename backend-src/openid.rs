@@ -1,3 +1,4 @@
+// Definition file for Steam's OpenID 2.0.
 use urlencoding::encode;
 
 use crate::config::ExampleConfig;

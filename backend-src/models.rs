@@ -17,6 +17,14 @@ pub struct User {
     pub username: String,
 }
 
+impl From<User> for MiniUser {
+    fn from(value: User) -> Self {
+        MiniUser {
+            steamid: value.steamid,
+            username: value.username,
+        }
+    }
+}
 #[derive(Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "teams")]
 pub struct Team {

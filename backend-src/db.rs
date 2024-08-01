@@ -90,7 +90,14 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
     let stmt = client.prepare(&_stmt).await.unwrap();
 
     client
-        .query(&stmt, &[&user_info.steamid, &user_info.username])
+        .query(
+            &stmt,
+            &[
+                &user_info.steamid,
+                &user_info.username,
+                &user_info.avatarurl,
+            ],
+        )
         .await?
         .iter()
         .map(|row| User::from_row_ref(row).unwrap())

@@ -12,6 +12,7 @@ use std::{collections::HashMap, io};
 use tokio_postgres::NoTls;
 
 mod authorization;
+mod checkpermission;
 mod config;
 mod db;
 mod errors;
@@ -81,8 +82,10 @@ pub async fn add_user_with_steamid(
     let (PlayerSummaryAccess::All { public, .. } | PlayerSummaryAccess::Private { public }) =
         steam_user_access_level;
     let user = MiniUser {
-        steamid: public.steamid.to_string(),
+        steamid: public.steamid,
+        avatarurl: public.avatarfull,
         username: public.personaname,
+        permissions: None,
     };
 
     db::add_user(db_client, user).await

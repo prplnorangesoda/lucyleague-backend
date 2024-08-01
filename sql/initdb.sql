@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS users (
 	id BIGSERIAL PRIMARY KEY,
 	steamid VARCHAR(50) UNIQUE NOT NULL,
 	username VARCHAR(50) NOT NULL,
-	is_admin BOOLEAN DEFAULT false,
+	avatarurl VARCHAR(200) NOT NULL,
+	permissions BIGINT DEFAULT 0 NOT NULL,
 	UNIQUE (username),
 	UNIQUE (steamid)
 );

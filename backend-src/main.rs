@@ -193,11 +193,11 @@ pub struct AppState {
 }
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    if !std::path::Path::new("./lucyleague-frontend/static")
+    if !std::path::Path::new("./lucyleague-frontend/out")
         .try_exists()
         .expect("Could not check if frontend path exists")
     {
-        panic!("Could not find lucyleague-frontend/static. Did you compile the frontend submodule?")
+        panic!("Could not find lucyleague-frontend/out. Did you compile the frontend submodule?")
     };
 
     dotenv().expect("Error loading .env file");
@@ -235,7 +235,7 @@ async fn main() -> io::Result<()> {
             .service(get_openid)
             .service(openid_landing)
             .service(
-                actix_files::Files::new("/", "./lucyleague-frontend/static")
+                actix_files::Files::new("/", "./lucyleague-frontend/out")
                     .show_files_listing()
                     .index_file("index.html"),
             )

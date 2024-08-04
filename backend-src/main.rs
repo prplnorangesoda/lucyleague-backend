@@ -45,6 +45,19 @@ pub async fn get_user_from_steamid(
     }
 }
 
+#[get("/api/user/authtoken/{authtoken}")]
+pub async fn get_user_from_auth_token(
+    state: web::Data<AppState>,
+    authtoken: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    println!("GET request at /api/user/authtoken/{authtoken}");
+    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+
+    let user = db::get_user_from_auth_token(&client, &authtoken).await?;
+
+    Ok(HttpResponse::Ok().json(user))
+}
+
 pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     println!("GET request at /users");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
@@ -227,6 +240,7 @@ async fn main() -> io::Result<()> {
             }))
             .service(get_team)
             .service(get_user_from_steamid)
+            .service(get_user_from_auth_token)
             .service(
                 web::resource("/api/users")
                     .route(web::get().to(get_users))

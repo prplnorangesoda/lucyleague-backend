@@ -1,6 +1,6 @@
 // Code that acts as a wrapper for database values.
 use chrono::{DateTime, Utc};
-use deadpool_postgres::Client;
+use deadpool_postgres::{Client, GenericClient};
 use tokio_pg_mapper::FromTokioPostgresRow;
 
 use crate::{
@@ -9,6 +9,31 @@ use crate::{
     models::{Authorization, MiniUser, User},
 };
 
+pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<User, MyError> {
+    let _stmt = include_str!("../sql/get_user_from_authtoken.sql");
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let received_auth = client
+        .query(&stmt, &[&token])
+        .await?
+        .iter()
+        .map(|row| Authorization::from_row_ref(row).unwrap())
+        .collect::<Vec<Authorization>>()
+        .pop()
+        .ok_or(MyError::NotFound)?;
+
+    let _stmt = "SELECT $table_fields FROM users WHERE id=$1;";
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    client.query(&stmt, &[&received_auth.userid])
+        .await?
+        .iter()
+        .map(|row| User::from_row_ref(row).unwrap())
+        .collect::<Vec<User>>()
+        .pop()
+        .ok_or(MyError::NotFound)
+}
 pub async fn get_user_from_steamid(client: &Client, steamid: &str) -> Result<User, MyError> {
     let _stmt = include_str!("../sql/get_user_from_steamid.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());

@@ -34,7 +34,7 @@ impl User {
 /// # Premade Permissions
 /// Some example premade permission shorthands in order to check multiple permissions at once,
 /// or to quickly set a user's permission without specifying each line manually.
-mod premade_permissions {
+pub mod premade_permissions {
     use crate::checkpermission::UserPermission;
     pub static LEAGUE_ADMIN: i64 =
         (UserPermission::CreateLeague as i64) + (UserPermission::CreateGame as i64);

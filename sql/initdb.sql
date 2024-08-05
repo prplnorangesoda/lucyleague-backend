@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS userTeam (
   leagueid BIGSERIAL NOT NULL,
 	userid BIGSERIAL NOT NULL,
 	teamid BIGSERIAL NOT NULL,
-  CONSTRAINT FK_userTeam_league FOREIGN KEY (leagueid) references leagues(id)
+  CONSTRAINT FK_userTeam_league FOREIGN KEY (leagueid) references leagues(id),
 	CONSTRAINT FK_userTeam_user FOREIGN KEY (userid) references users(id),
 	CONSTRAINT FK_userTeam_team FOREIGN KEY (teamid) references teams(id)
 );

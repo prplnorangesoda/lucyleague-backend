@@ -64,6 +64,7 @@ async fn main() -> io::Result<()> {
             )
             .service(get_league)
             .service(get_all_leagues)
+            .service(post_league)
             .service(get_openid)
             .service(openid_landing)
             .service(

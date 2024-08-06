@@ -6,7 +6,7 @@ use tokio_pg_mapper::FromTokioPostgresRow;
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
-    models::{Authorization, League, MiniUser, User, Team},
+    models::{Authorization, League, MiniLeague, MiniUser, Team, User},
 };
 
 pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {
@@ -56,6 +56,21 @@ pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
     Ok(results)
 }
 
+pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, MyError> {
+    let _stmt = "INSERT INTO leagues(name) VALUES ($1) RETURNING $table_fields";
+    let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[&league.name])
+        .await?
+        .iter()
+        .map(|row| League::from_row_ref(row).unwrap())
+        .collect::<Vec<League>>()
+        .pop()
+        .unwrap();
+    Ok(results)    
+}
 pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<User, MyError> {
     let _stmt = include_str!("../sql/get_user_from_authtoken.sql");
     let stmt = client.prepare(&_stmt).await.unwrap();

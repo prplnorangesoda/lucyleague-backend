@@ -1,10 +1,11 @@
+use crate::models::MiniLeague;
 // Main execution and routes.
 use crate::steamapi;
 use crate::PlayerSummaryAccess;
 use crate::db;
 use crate::models::User;
 use crate::errors::MyError;
-use actix_web::{get, web, Error, HttpResponse, Responder};
+use actix_web::{get, post, web, Error, HttpResponse, Responder};
 use serde::Deserialize;
 use crate::authorization::get_authorization_for_user;
 use deadpool_postgres::{Client, Pool};
@@ -58,6 +59,18 @@ pub async fn get_league(
         teams
     };
     Ok(HttpResponse::Ok().json(results))
+}
+
+#[post("/api/v1/leagues")]
+pub async fn post_league(
+    league: web::Json<MiniLeague>,
+    state: web::Data<AppState>
+) -> Result<HttpResponse, Error> {
+    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+    let league = league.into_inner();
+    let response = db::add_league(&client, league).await?;
+
+    Ok(HttpResponse::Ok().json(response))
 }
 
 #[get("/login/landing")]

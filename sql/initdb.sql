@@ -15,7 +15,9 @@ CREATE TABLE IF NOT EXISTS leagues (
 
 CREATE TABLE IF NOT EXISTS teams (
 	id BIGSERIAL PRIMARY KEY,
-	team_name VARCHAR(200) NOT NULL
+  leagueid BIGSERIAL NOT NULL,
+	team_name VARCHAR(200) NOT NULL,
+  CONSTRAINT FK_teams_league FOREIGN KEY (leagueid) references leagues(id)
 );
 
 CREATE TABLE IF NOT EXISTS userTeam (

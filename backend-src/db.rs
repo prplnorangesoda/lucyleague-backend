@@ -6,8 +6,55 @@ use tokio_pg_mapper::FromTokioPostgresRow;
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
-    models::{Authorization, MiniUser, User},
+    models::{Authorization, League, MiniUser, User, Team},
 };
+
+pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {
+    let _stmt = "SELECT $table_fields FROM leagues WHERE id=$1;";
+    let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
+    println!("{0}", _stmt);
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[&leagueid])
+        .await?
+        .iter()
+        .map(|row| League::from_row_ref(row).unwrap())
+        .collect::<Vec<League>>()
+        .pop()
+        .ok_or(MyError::NotFound)?;
+
+    Ok(results)
+}
+
+pub async fn get_teams_with_leagueid(client: &Client, leagueid: i64) -> Result<Vec<Team>, MyError> {
+    let _stmt = "SELECT $table_fields FROM teams WHERE leagueid=$1";
+    let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[&leagueid])
+        .await?
+        .iter()
+        .map(|row| Team::from_row_ref(row).unwrap())
+        .collect::<Vec<Team>>();
+    Ok(results)
+    
+}
+
+pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
+    let _stmt = "SELECT $table_fields FROM leagues;";
+    let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[])
+        .await?
+        .iter()
+        .map(|row| League::from_row_ref(row).unwrap())
+        .collect::<Vec<League>>();
+    Ok(results)
+}
 
 pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<User, MyError> {
     let _stmt = include_str!("../sql/get_user_from_authtoken.sql");

@@ -51,6 +51,7 @@ pub struct League {
 #[pg_mapper(table = "teams")]
 pub struct Team {
     pub id: i64,
+    pub leagueid: i64,
     pub team_name: String,
 }
 

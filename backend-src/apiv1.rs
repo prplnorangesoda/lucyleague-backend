@@ -5,9 +5,12 @@ use crate::db;
 use crate::models::User;
 use crate::errors::MyError;
 use actix_web::{get, web, Error, HttpResponse, Responder};
+use serde::Deserialize;
 use crate::authorization::get_authorization_for_user;
 use deadpool_postgres::{Client, Pool};
 use crate::models::MiniUser;
+use crate::models::League;
+use crate::models::Team;
 use std::collections::HashMap;
 /*
 https://rgl.gg/Login/Default.aspx?push=1&r=40
@@ -27,9 +30,38 @@ pub struct AppState {
     pub steam_auth_url: String,
     pub steam_api_key: String,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
+struct UserResponse {
+    user: User,
+    teams: Vec<Team>
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+struct LeagueResponse {
+    info: League,
+    teams: Vec<Team>
+}
+
+#[get("/api/v1/leagues/{league_id}")]
+pub async fn get_league(
+    state: web::Data<AppState>,
+    league_id: web::Path<i64>    
+) -> Result<HttpResponse, Error> {
+    println!("GET request at /api/v1/leagues/league_id");
+    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+
+    let league_info = db::get_league(&client, *league_id).await?;
+
+    let teams = db::get_teams_with_leagueid(&client, *league_id).await?;
+
+    let results = LeagueResponse {
+        info: league_info,
+        teams
+    };
+    Ok(HttpResponse::Ok().json(results))
+}
 
 #[get("/login/landing")]
-async fn openid_landing(
+pub async fn openid_landing(
     query: web::Query<HashMap<String, String>>,
     state: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
@@ -91,7 +123,7 @@ async fn openid_landing(
 }
 
 
-#[get("/api/user/steamid/{steamid}")]
+#[get("/api/v1/user/steamid/{steamid}")]
 pub async fn get_user_from_steamid(
     state: web::Data<AppState>,
     steamid: web::Path<String>,
@@ -113,7 +145,7 @@ pub async fn get_user_from_steamid(
     }
 }
 
-#[get("/api/user/authtoken/{authtoken}")]
+#[get("/api/v1/user/authtoken/{authtoken}")]
 pub async fn get_user_from_auth_token(
     state: web::Data<AppState>,
     authtoken: web::Path<String>,
@@ -172,6 +204,18 @@ pub async fn add_user_with_steamid(
     db::add_user(db_client, user).await
 }
 
+#[get("/api/v1/leagues")]
+async fn get_all_leagues(state: web::Data<AppState>) -> Result <HttpResponse, Error> {
+    println!("GET request at /api/v1/leagues");
+    let client = state.pool.get().await.map_err(MyError::PoolError)?;
+    
+    let leagues: Vec<League> = db::get_leagues(&client).await?;
+
+
+    Ok(HttpResponse::Ok().json(leagues)) 
+}
+
+
 #[get("/api/v1/teams/{team_id}")]
 async fn get_team(path: web::Path<u32>) -> impl Responder {
     println!("GET request at /teams/id");
@@ -190,5 +234,7 @@ async fn get_openid(data: web::Data<AppState>) -> impl Responder {
         .insert_header(("Location", data.into_inner().steam_auth_url.clone()))
         .body("Redirecting...")
 }
+
+
 
 

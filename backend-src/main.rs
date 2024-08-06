@@ -62,6 +62,8 @@ async fn main() -> io::Result<()> {
                     .route(web::get().to(get_users))
                     .route(web::post().to(add_user)),
             )
+            .service(get_league)
+            .service(get_all_leagues)
             .service(get_openid)
             .service(openid_landing)
             .service(

@@ -6,7 +6,6 @@ use crate::db;
 use crate::models::User;
 use crate::errors::MyError;
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
-use serde::Deserialize;
 use crate::authorization::get_authorization_for_user;
 use deadpool_postgres::{Client, Pool};
 use crate::models::MiniUser;
@@ -66,6 +65,7 @@ pub async fn post_league(
     league: web::Json<MiniLeague>,
     state: web::Data<AppState>
 ) -> Result<HttpResponse, Error> {
+    println!("POST request at /api/v1/leagues");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
     let league = league.into_inner();
     let response = db::add_league(&client, league).await?;
@@ -98,9 +98,10 @@ pub async fn openid_landing(
     //     .get("openid.signed")
     //     .expect("No openid.signed on request");
 
-    let openid_identity = inner
-        .get("openid.identity")
-        .expect("No openid.identity on request");
+    let openid_identity: &String =  match inner.get("openid.identity") {
+            Some(str) => str,
+            None => return Ok(HttpResponse::BadRequest().finish())
+        };
 
     // let openid_sig = inner.get("openid.sig").expect("No openid.sig on request");
     let steamid = openid_identity.replace("https://steamcommunity.com/openid/id/", "");
@@ -117,9 +118,11 @@ pub async fn openid_landing(
         },
         // user wasn't found
         Err(_) => {
-            let user: User = add_user_with_steamid(&state, &client, &steamid)
-                .await
-                .expect("User addition should not fail");
+            let user: User =  match add_user_with_steamid(&state, &client, &steamid).await
+                {
+                    Ok(user) => user,
+                    Err(_) => return Ok(HttpResponse::InternalServerError().finish())
+                };
             get_authorization_for_user(&client, &user).await?
         }
     };

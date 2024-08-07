@@ -80,11 +80,15 @@ pub async fn openid_landing(
 ) -> Result<impl Responder, Error> {
     println!("GET request at login/landing");
     let inner = query.into_inner();
-    // let mut keyValuesString = String::new();
-    // for (key, val) in inner.iter() {
-    //     keyValuesString.push_str(&format!("{key}:{val}\n"));
-    // }
-    // println!("{keyValuesString}");
+    println!("{inner:?}");
+
+    match steamapi::verify_authentication_with_steam(&inner).await {
+        Ok(_) => {},
+        Err(some) => {
+            return Ok(HttpResponse::InternalServerError().body(some.to_string()))
+        }
+    }
+
     // let result: String = reqwest::Client::new()
     //     .post("https://steamcommunity.com/openid")
     //     .body("openid.mode=check_authentication\n")
@@ -94,9 +98,7 @@ pub async fn openid_landing(
     //     .text()
     //     .await
     //     .expect("should be able to get text from response");
-    // let openid_signed = inner
-    //     .get("openid.signed")
-    //     .expect("No openid.signed on request");
+
 
     let openid_identity: &String =  match inner.get("openid.identity") {
             Some(str) => str,

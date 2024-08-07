@@ -1,5 +1,11 @@
+use std::collections::HashMap;
+
 // Code that interacts with Steam's Web API.
 use derive_more::{Display, Error, From};
+use reqwest::{redirect::Policy, StatusCode};
+use urlencoding::encode;
+
+use crate::errors::MyError;
 /// An error caused by our interacting with the steam API.
 #[derive(Debug, Display, Error, From)]
 pub enum ApiError {
@@ -21,10 +27,10 @@ pub enum ReturnedAccessLevel {
 pub enum PlayerSummaryAccess {
     All {
         private: Box<PrivatelyAvailableSummary>,
-        public: PubliclyAvailableSummary,
+        public: Box<PubliclyAvailableSummary>,
     },
     Private {
-        public: PubliclyAvailableSummary,
+        public: Box<PubliclyAvailableSummary>,
     },
 }
 
@@ -186,13 +192,39 @@ pub async fn get_user_summary(
             .ok_or(ApiError::NotFound)?;
         Ok(PlayerSummaryAccess::All {
             private: Box::new(PrivatelyAvailableSummary::from_allplayerinfo(&needed_info)),
-            public: PubliclyAvailableSummary::from_allplayerinfo(&needed_info),
+            public: Box::new(PubliclyAvailableSummary::from_allplayerinfo(&needed_info)),
         })
     }
     // We can't see the whole profile, therefore the response includes only public information.
     else {
         Ok(PlayerSummaryAccess::Private {
-            public: serde_json::from_str(&body)?,
+            public: Box::new(serde_json::from_str(&body)?),
         })
     }
+}
+
+pub async fn verify_authentication_with_steam(key_values_map: &HashMap<String, String>) -> Result<bool, ApiError> {
+    let client = reqwest::Client::builder().redirect(Policy::none()).build()?;
+
+    let mut body_string = String::new();
+    for (key, value) in key_values_map.iter() {
+        body_string.push_str(&format!("{0}={1}&", encode(key), encode(value)))
+    }
+
+    body_string.pop();
+    let body_string = body_string.replace("openid.mode=id_res", "openid.mode=check_authentication");
+    println!("{body_string}");
+    let resp = client.post("https://steamcommunity.com/openid/login")
+    .header("Content-Type", "application/x-www-form-urlencoded")
+    .body(body_string)
+    .send()
+    .await?;
+
+    if resp.status() != StatusCode::OK {
+        println!("{resp:?}");
+        return Err(ApiError::Handling)
+    };
+
+    let text = resp.text().await?;
+    Ok(text.contains("is_valid:true"))
 }

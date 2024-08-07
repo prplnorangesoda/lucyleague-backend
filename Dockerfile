@@ -1,5 +1,5 @@
 # Rust as the base image
-FROM rust:1.79 as rust-builder
+FROM rust:1.79 AS rust-builder
 RUN cargo install cargo-build-dependencies
 RUN cd /tmp && USER=root cargo new --bin lucyleague
 WORKDIR /tmp/lucyleague

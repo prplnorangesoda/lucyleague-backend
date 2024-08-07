@@ -3,7 +3,7 @@ use urlencoding::encode;
 
 use crate::config::ExampleConfig;
 pub enum OpenIdMode {
-    Immediate,
+    //Immediate,
     Setup,
 }
 
@@ -78,7 +78,7 @@ impl SteamOpenId {
         let mode = format!(
             "openid.mode={0}",
             match &self.config.mode {
-                OpenIdMode::Immediate => "checkid_immediate",
+                //OpenIdMode::Immediate => "checkid_immediate",
                 OpenIdMode::Setup => "checkid_setup",
             }
         );

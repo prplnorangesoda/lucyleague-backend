@@ -83,21 +83,16 @@ pub async fn openid_landing(
     println!("{inner:?}");
 
     match steamapi::verify_authentication_with_steam(&inner).await {
-        Ok(_) => {},
+        Ok(yeah) => {match yeah {
+            true => {},
+            false => {
+                return Ok(HttpResponse::BadRequest().body("Could not verify your identity with Steam"))
+            }
+        }},
         Err(some) => {
             return Ok(HttpResponse::InternalServerError().body(some.to_string()))
         }
     }
-
-    // let result: String = reqwest::Client::new()
-    //     .post("https://steamcommunity.com/openid")
-    //     .body("openid.mode=check_authentication\n")
-    //     .send()
-    //     .await
-    //     .expect("should be a response from steam")
-    //     .text()
-    //     .await
-    //     .expect("should be able to get text from response");
 
 
     let openid_identity: &String =  match inner.get("openid.identity") {

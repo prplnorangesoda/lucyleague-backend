@@ -5,7 +5,6 @@ use derive_more::{Display, Error, From};
 use reqwest::{redirect::Policy, StatusCode};
 use urlencoding::encode;
 
-use crate::errors::MyError;
 /// An error caused by our interacting with the steam API.
 #[derive(Debug, Display, Error, From)]
 pub enum ApiError {

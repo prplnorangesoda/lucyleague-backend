@@ -132,7 +132,7 @@ pub async fn openid_landing(
             ),
         ))
         .append_header(("Location", "/home"))
-        .body(format!("{auth:?}")))
+        .finish())
 }
 
 

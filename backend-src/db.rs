@@ -39,7 +39,6 @@ pub async fn get_teams_with_leagueid(client: &Client, leagueid: i64) -> Result<V
         .map(|row| Team::from_row_ref(row).unwrap())
         .collect::<Vec<Team>>();
     Ok(results)
-    
 }
 
 pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
@@ -69,7 +68,7 @@ pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, M
         .collect::<Vec<League>>()
         .pop()
         .unwrap();
-    Ok(results)    
+    Ok(results)
 }
 pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<User, MyError> {
     let _stmt = include_str!("../sql/get_user_from_authtoken.sql");
@@ -88,7 +87,8 @@ pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<Us
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
-    client.query(&stmt, &[&received_auth.userid])
+    client
+        .query(&stmt, &[&received_auth.userid])
         .await?
         .iter()
         .map(|row| User::from_row_ref(row).unwrap())

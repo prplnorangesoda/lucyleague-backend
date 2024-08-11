@@ -202,8 +202,12 @@ pub async fn get_user_summary(
     }
 }
 
-pub async fn verify_authentication_with_steam(key_values_map: &HashMap<String, String>) -> Result<bool, ApiError> {
-    let client = reqwest::Client::builder().redirect(Policy::none()).build()?;
+pub async fn verify_authentication_with_steam(
+    key_values_map: &HashMap<String, String>,
+) -> Result<bool, ApiError> {
+    let client = reqwest::Client::builder()
+        .redirect(Policy::none())
+        .build()?;
 
     let mut body_string = String::new();
     for (key, value) in key_values_map.iter() {
@@ -213,15 +217,16 @@ pub async fn verify_authentication_with_steam(key_values_map: &HashMap<String, S
     body_string.pop();
     let body_string = body_string.replace("openid.mode=id_res", "openid.mode=check_authentication");
     println!("{body_string}");
-    let resp = client.post("https://steamcommunity.com/openid/login")
-    .header("Content-Type", "application/x-www-form-urlencoded")
-    .body(body_string)
-    .send()
-    .await?;
+    let resp = client
+        .post("https://steamcommunity.com/openid/login")
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .body(body_string)
+        .send()
+        .await?;
 
     if resp.status() != StatusCode::OK {
         println!("{resp:?}");
-        return Err(ApiError::Handling)
+        return Err(ApiError::Handling);
     };
 
     let text = resp.text().await?;

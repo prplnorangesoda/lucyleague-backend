@@ -69,7 +69,7 @@ impl SteamOpenId {
         let root_part = "https://steamcommunity.com/openid/login";
         let claimed_id =
             "openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select";
-        let identity = format!("&openid.identity={0}", &self.config.identity);
+        let identity = format!("openid.identity={0}", &self.config.identity);
         let return_part = format!("openid.return_to={0}", encode(&self.config.return_url));
         let realm = format!(
             "openid.realm=http%3A%2F%2F{0}:{1}%2F",

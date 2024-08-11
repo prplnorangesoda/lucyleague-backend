@@ -7,6 +7,7 @@ use dotenvy::dotenv;
 use std::io;
 use tokio_postgres::NoTls;
 
+mod apiv1;
 mod authorization;
 mod checkpermission;
 mod config;
@@ -15,10 +16,9 @@ mod errors;
 mod models;
 mod openid;
 mod steamapi;
-mod apiv1;
 
-use self::steamapi::PlayerSummaryAccess;
 use self::apiv1::*;
+use self::steamapi::PlayerSummaryAccess;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {

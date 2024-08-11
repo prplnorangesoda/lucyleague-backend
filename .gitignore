@@ -1,5 +1,5 @@
 .DS_Store
-
+*.code-workspace
 hide.txt
 .env
 static/

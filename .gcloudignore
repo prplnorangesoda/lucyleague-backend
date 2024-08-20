@@ -1,0 +1,5 @@
+target/
+
+lucyleague-frontend/*
+!lucyleague-frontend/out
+!lucyleague-frontend/out/*

@@ -4,3 +4,5 @@ hide.txt
 .env
 static/
 target/
+
+app.yaml

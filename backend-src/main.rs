@@ -66,7 +66,7 @@ async fn main() -> io::Result<()> {
                     true
                 }
                 else {
-                    panic!("InquireError: {:?}", E);
+                    panic!("InquireError: {:?}", err);
                 }
             }
         };

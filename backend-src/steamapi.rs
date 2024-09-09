@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 // Code that interacts with Steam's Web API.
 use derive_more::{Display, Error, From};
-use reqwest::{redirect::Policy, StatusCode};
-use urlencoding::encode;
 
 /// An error caused by our interacting with the steam API.
 #[derive(Debug, Display, Error, From)]

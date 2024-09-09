@@ -81,7 +81,7 @@ pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, M
 }
 pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<User, MyError> {
     let _stmt = include_str!("../sql/get_user_from_authtoken.sql");
-    let stmt = client.prepare(&_stmt).await.unwrap();
+    let stmt = client.prepare(_stmt).await.unwrap();
 
     let received_auth = client
         .query(&stmt, &[&token])

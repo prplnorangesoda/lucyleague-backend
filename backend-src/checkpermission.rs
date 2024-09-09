@@ -1,8 +1,9 @@
 use serde::Serialize;
+use num_derive::FromPrimitive;
 
 use crate::models::User;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, FromPrimitive)]
 pub enum UserPermission {
     None = 0,
     /// All permissions.

@@ -1,13 +1,23 @@
 // Code that acts as a wrapper for database values.
 use chrono::{DateTime, Utc};
-use deadpool_postgres::{Client, GenericClient};
+use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
+use tokio_postgres::GenericClient;
 
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
     models::{Authorization, League, MiniLeague, MiniUser, Team, User},
 };
+
+pub async fn initdb(client: &Client) -> Result<(), MyError> {
+    let _stmt = include_str!("../sql/initdb.sql");
+
+    let result = client
+        .batch_execute(_stmt)
+        .await?;
+    Ok(())
+}
 
 pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {
     let _stmt = "SELECT $table_fields FROM leagues WHERE id=$1;";

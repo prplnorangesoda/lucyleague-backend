@@ -4,7 +4,8 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
-use std::io;
+use inquire::InquireError;
+use tokio::io::{self, AsyncReadExt};
 use tokio_postgres::NoTls;
 
 mod apiv1;
@@ -26,7 +27,8 @@ async fn main() -> io::Result<()> {
         .try_exists()
         .expect("Could not check if frontend path exists")
     {
-        panic!("Could not find lucyleague-frontend/out. Did you compile the frontend submodule?")
+        eprintln!("Could not find lucyleague-frontend/out. Did you compile the frontend submodule?");
+        std::process::exit(1);
     };
 
     dotenv().expect("Error loading .env file");
@@ -38,16 +40,53 @@ async fn main() -> io::Result<()> {
 
     let steam_config = openid::SteamOpenIdConfig::new(&format!(
         "http://{0}:{1}/login/landing",
-        &config.openid_realm, &config.server_port
+        &config.openid_realm, &config.openid_port
     ));
 
     let steam_setup = openid::SteamOpenId::new(steam_config, config.clone());
     let auth_url = steam_setup.get_auth_url();
     let pool = config.pg.create_pool(None, NoTls).unwrap();
+    
+    let stmt_text = "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users');";
+
+    let client = pool.get().await.unwrap();
+    let stmt = client.prepare(stmt_text).await.unwrap();
+    let rows = client.query(&stmt, &[]).await.unwrap();
+    let value: bool = rows[0].get(0);
+
+    
+    if !value {
+        let ans = match inquire::Confirm::new("No user table found. Would you like to initialize the database?")
+        .with_default(true)
+        .prompt() {
+            Ok(res) => res,
+            Err(err) => {
+                if let InquireError::NotTTY = err {
+                    eprintln!("This is not a TTY. Initializing database by default.");
+                    true
+                }
+                else {
+                    panic!("InquireError: {:?}", E);
+                }
+            }
+        };
+
+        if ans {
+            db::initdb(&client).await.unwrap();
+        }
+        else {
+            panic!("{:?}", ans);
+        }
+        
+    }
+
+    println!("{client:?}");
     println!("{config:?}");
 
     let server = HttpServer::new(move || {
         App::new()
+            // NOTE: this CORS is temporary until we release to production
+            // don't forget!! TODO
             .wrap(Cors::permissive())
             .app_data(web::Data::new(AppState {
                 pool: pool.clone(),

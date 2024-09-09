@@ -5,7 +5,7 @@ use actix_web::{web, App, HttpServer};
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
 use inquire::InquireError;
-use tokio::io::{self, AsyncReadExt};
+use tokio::io;
 use tokio_postgres::NoTls;
 
 mod apiv1;

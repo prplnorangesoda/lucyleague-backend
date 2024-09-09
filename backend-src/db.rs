@@ -2,7 +2,6 @@
 use chrono::{DateTime, Utc};
 use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
-use tokio_postgres::GenericClient;
 
 use crate::{
     authorization::create_authorization_for_user,
@@ -13,7 +12,7 @@ use crate::{
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
     let _stmt = include_str!("../sql/initdb.sql");
 
-    let result = client
+    client
         .batch_execute(_stmt)
         .await?;
     Ok(())

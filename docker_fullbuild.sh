@@ -16,6 +16,13 @@ else
 fi
 
 cd ..
-docker-compose down
-docker-compose build && docker-compose up
+
+if command -v docker-compose
+then
+    docker-compose down
+    docker-compose build && docker-compose up
+else
+    docker compose down
+    docker compose build && docker compose up
+fi
 

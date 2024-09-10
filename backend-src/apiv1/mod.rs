@@ -5,7 +5,6 @@ use crate::db;
 use crate::errors::MyError;
 use crate::models::League;
 use crate::models::MiniUser;
-use crate::models::Team;
 use crate::models::User;
 use crate::steamapi;
 use crate::PlayerSummaryAccess;
@@ -14,8 +13,10 @@ use deadpool_postgres::{Client, Pool};
 use std::collections::HashMap;
 
 pub mod admin;
+mod apimodels; 
 
-pub use admin::*;
+use apimodels::*;
+
 /*
 https://rgl.gg/Login/Default.aspx?push=1&r=40
 &dnoa.userSuppliedIdentifier=https%3A%2F%2Fsteamcommunity.com%2Fopenid%2F
@@ -34,16 +35,7 @@ pub struct AppState {
     pub steam_auth_url: String,
     pub steam_api_key: String,
 }
-#[derive(serde::Serialize, serde::Deserialize)]
-struct UserResponse {
-    user: User,
-    teams: Vec<Team>,
-}
-#[derive(serde::Serialize, serde::Deserialize)]
-struct LeagueResponse {
-    info: League,
-    teams: Vec<Team>,
-}
+
 
 #[get("/api/v1/leagues/{league_id}")]
 pub async fn get_league(
@@ -62,19 +54,6 @@ pub async fn get_league(
         teams,
     };
     Ok(HttpResponse::Ok().json(results))
-}
-
-#[post("/api/v1/leagues")]
-pub async fn post_league(
-    league: web::Json<MiniLeague>,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
-    println!("POST request at /api/v1/leagues");
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
-    let league = league.into_inner();
-    let response = db::add_league(&client, league).await?;
-
-    Ok(HttpResponse::Ok().json(response))
 }
 
 #[get("/login/landing")]

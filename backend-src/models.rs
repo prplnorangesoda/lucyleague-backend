@@ -64,8 +64,8 @@ pub struct Team {
 #[derive(Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "userTeam")]
 pub struct UserTeam {
-    pub userid: String,
-    pub teamid: String,
+    pub userid: i64,
+    pub teamid: i64,
 }
 
 #[derive(Deserialize, PostgresMapper, Serialize, Debug)]

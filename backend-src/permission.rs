@@ -1,3 +1,8 @@
+///! # About permissions
+///! Permissions are made using a bitfield. 
+///! Using a i64 allows us 63 different permissions with one numerical value.
+///! We use an i64 to be able to store this permissions value in Postgres.
+///! This should be enough for now, but in future we can use a second permission value.
 use serde::Serialize;
 use num_derive::FromPrimitive;
 
@@ -5,6 +10,7 @@ use crate::models::User;
 
 #[derive(Clone, Copy, FromPrimitive)]
 pub enum UserPermission {
+    /// Must check for none using ==.
     None = 0,
     /// All permissions.
     Admin = 1 << 0,
@@ -21,7 +27,7 @@ impl Serialize for UserPermission {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_i64(*self as i64)
+        serializer.serialize_u64(*self as u64)
     }
 }
 
@@ -36,7 +42,7 @@ impl User {
 /// Some example premade permission shorthands in order to check multiple permissions at once,
 /// or to quickly set a user's permission without specifying each line manually.
 pub mod premade_permissions {
-    use crate::checkpermission::UserPermission;
+    use crate::permission::UserPermission;
     pub static LEAGUE_ADMIN: i64 =
         (UserPermission::CreateLeague as i64) + (UserPermission::CreateGame as i64);
 }

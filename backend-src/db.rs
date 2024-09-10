@@ -6,7 +6,7 @@ use tokio_pg_mapper::FromTokioPostgresRow;
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
-    models::{Authorization, League, MiniLeague, MiniUser, Team, User},
+    models::{Authorization, League, MiniLeague, MiniUser, Team, User, UserTeam},
 };
 
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
@@ -16,6 +16,32 @@ pub async fn initdb(client: &Client) -> Result<(), MyError> {
         .batch_execute(_stmt)
         .await?;
     Ok(())
+}
+
+pub async fn get_team_players(client: &Client, team: Team) -> Result<Vec<User>, MyError> {
+    let _stmt = "SELECT $table_fields FROM userTeam WHERE teamid=$1 AND leagueid=$2";
+    let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let userids: Vec<i64> = client.
+        query(&stmt, &[&team.id, &team.leagueid])
+        .await?
+        .iter()
+        .map(|row| 
+            UserTeam::from_row_ref(row).unwrap().userid)
+        .collect();
+    
+    
+
+    mass_get_user_from_internal_id(client, &userids).await
+}
+
+async fn mass_get_user_from_internal_id(client: &Client, userids: &Vec<i64>) -> Result<Vec<User>, MyError> {
+    todo!();
+    let _stmt = "SELECT $table_fields FROM users WHERE id IN ($1)";
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    Ok(results)
 }
 
 pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {

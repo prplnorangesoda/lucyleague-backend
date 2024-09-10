@@ -203,7 +203,6 @@ pub async fn get_user_summary(
 impl From<steamopenid::ApiError> for ApiError {
     fn from(value: steamopenid::ApiError) -> Self {
         match value {
-            steamopenid::ApiError::ReqwestError(h) => Self::Reqwest(h),
             steamopenid::ApiError::Handling => Self::Handling,
             steamopenid::ApiError::KeyValuesError(h) => Self::KeyValues(h),
         }

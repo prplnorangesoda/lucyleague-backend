@@ -12,6 +12,10 @@ use crate::PlayerSummaryAccess;
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
 use deadpool_postgres::{Client, Pool};
 use std::collections::HashMap;
+
+pub mod admin;
+
+pub use admin::*;
 /*
 https://rgl.gg/Login/Default.aspx?push=1&r=40
 &dnoa.userSuppliedIdentifier=https%3A%2F%2Fsteamcommunity.com%2Fopenid%2F

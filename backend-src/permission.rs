@@ -1,10 +1,10 @@
-///! # About permissions
-///! Permissions are made using a bitfield. 
-///! Using a i64 allows us 63 different permissions with one numerical value.
-///! We use an i64 to be able to store this permissions value in Postgres.
-///! This should be enough for now, but in future we can use a second permission value.
-use serde::Serialize;
+//! # About permissions
+//! Permissions are made using a bitfield.
+//! Using a i64 allows us 63 different permissions with one numerical value.
+//! We use an i64 to be able to store this permissions value in Postgres.
+//! This should be enough for now, but in future we can use a second permission value.
 use num_derive::FromPrimitive;
+use serde::Serialize;
 
 use crate::models::User;
 

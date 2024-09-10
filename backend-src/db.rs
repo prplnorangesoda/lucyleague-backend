@@ -12,10 +12,25 @@ use crate::{
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
     let _stmt = include_str!("../sql/initdb.sql");
 
-    client
-        .batch_execute(_stmt)
-        .await?;
+    client.batch_execute(_stmt).await?;
     Ok(())
+}
+
+pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyError> {
+    let _stmt = "SELECT $table_fields FROM teams WHERE teamid=$1";
+    let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[&team_id])
+        .await?
+        .iter()
+        .map(|row| Team::from_row_ref(row).unwrap())
+        .collect::<Vec<Team>>()
+        .pop()
+        .ok_or(MyError::NotFound);
+
+    results
 }
 
 pub async fn get_team_players(client: &Client, team: Team) -> Result<Vec<User>, MyError> {
@@ -23,25 +38,32 @@ pub async fn get_team_players(client: &Client, team: Team) -> Result<Vec<User>, 
     let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
-    let userids: Vec<i64> = client.
-        query(&stmt, &[&team.id, &team.leagueid])
+    let userids: Vec<i64> = client
+        .query(&stmt, &[&team.id, &team.leagueid])
         .await?
         .iter()
-        .map(|row| 
-            UserTeam::from_row_ref(row).unwrap().userid)
+        .map(|row| UserTeam::from_row_ref(row).unwrap().userid)
         .collect();
-    
-    
 
     mass_get_user_from_internal_id(client, &userids).await
 }
 
-async fn mass_get_user_from_internal_id(client: &Client, userids: &Vec<i64>) -> Result<Vec<User>, MyError> {
-    todo!();
+async fn mass_get_user_from_internal_id(
+    client: &Client,
+    userids: &Vec<i64>,
+) -> Result<Vec<User>, MyError> {
     let _stmt = "SELECT $table_fields FROM users WHERE id IN ($1)";
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
-    Ok(results)
+    let users: Vec<User> = client
+        .query(&stmt, &[userids])
+        .await?
+        .iter()
+        .map(|row| User::from_row_ref(row).unwrap())
+        .collect();
+
+    Ok(users)
 }
 
 pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {

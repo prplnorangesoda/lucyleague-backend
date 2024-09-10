@@ -29,6 +29,12 @@ impl User {
     fn check_has_permission(&self, permission: UserPermission) -> bool {
         self.permissions & (permission as i64) != 0
     }
+    fn add_permission(&mut self, permission: UserPermission) {
+        if self.permissions & (permission as i64) != 0 {
+            return
+        }
+        self.permissions = self.permissions + permission as i64;
+    }
 }
 
 /// # Premade Permissions
@@ -36,6 +42,7 @@ impl User {
 /// or to quickly set a user's permission without specifying each line manually.
 pub mod premade_permissions {
     use crate::checkpermission::UserPermission;
+    pub static ALL: i64 = UserPermission::Admin as i64;
     pub static LEAGUE_ADMIN: i64 =
         (UserPermission::CreateLeague as i64) + (UserPermission::CreateGame as i64);
 }

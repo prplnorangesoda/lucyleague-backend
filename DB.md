@@ -4,6 +4,9 @@
 
 Remember to set your PG\_\_HOST in .env to `db`.
 
+Create a .env file (with .env.example). Note that for now PG DBNAME and PG USER have to be the same.
+
+
 ## Non docker
 
 To initiate the database:
@@ -22,16 +25,16 @@ To initiate the database:
 
 4. Grant privileges to user
 
-5. Create .env file (with .env.example)
+5. Create a .env file (with .env.example). Note that for now PG DBNAME and PG USER have to be the same
 
 6. Run the server.
 
 7. Test that the server accepts POST requests.
 
 ```bash
-curl -i -d '{"steamid": "654", "username": "example"}' -H 'Content-Type: application/json' http://127.0.0.1:8080/users
+curl -i -d '{"name":"TEST LEAGUE"}' -H 'Content-Type: application/json' http://127.0.0.1:8080/api/v1/leagues
 ```
 
 ```bash
-echo '{"steamid": "654", "username": "example"}' | http -f --json --print h POST http://127.0.0.1:8080/users
+echo '{"name":"TEST LEAGUE"}' | http -f --json --print h POST http://127.0.0.1:8080/api/v1/leagues
 ```

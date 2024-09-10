@@ -6,6 +6,7 @@ use serde::Deserialize;
 pub struct ExampleConfig {
     pub steam_api_key: String,
     pub openid_realm: String,
+    pub openid_port: String,
     pub server_addr: String,
     pub server_port: u16,
     #[confik(from = DbConfig)]

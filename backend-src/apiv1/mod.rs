@@ -1,18 +1,21 @@
 use crate::models::MiniLeague;
 // Main execution and routes.
+use crate::authorization::get_authorization_for_user;
+use crate::db;
+use crate::errors::MyError;
+use crate::models::League;
+use crate::models::MiniUser;
+use crate::models::Team;
+use crate::models::User;
 use crate::steamapi;
 use crate::PlayerSummaryAccess;
-use crate::db;
-use crate::models::User;
-use crate::errors::MyError;
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
-use serde::Deserialize;
-use crate::authorization::get_authorization_for_user;
 use deadpool_postgres::{Client, Pool};
-use crate::models::MiniUser;
-use crate::models::League;
-use crate::models::Team;
 use std::collections::HashMap;
+
+pub mod admin;
+
+pub use admin::*;
 /*
 https://rgl.gg/Login/Default.aspx?push=1&r=40
 &dnoa.userSuppliedIdentifier=https%3A%2F%2Fsteamcommunity.com%2Fopenid%2F
@@ -34,18 +37,18 @@ pub struct AppState {
 #[derive(serde::Serialize, serde::Deserialize)]
 struct UserResponse {
     user: User,
-    teams: Vec<Team>
+    teams: Vec<Team>,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 struct LeagueResponse {
     info: League,
-    teams: Vec<Team>
+    teams: Vec<Team>,
 }
 
 #[get("/api/v1/leagues/{league_id}")]
 pub async fn get_league(
     state: web::Data<AppState>,
-    league_id: web::Path<i64>    
+    league_id: web::Path<i64>,
 ) -> Result<HttpResponse, Error> {
     println!("GET request at /api/v1/leagues/league_id");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
@@ -56,7 +59,7 @@ pub async fn get_league(
 
     let results = LeagueResponse {
         info: league_info,
-        teams
+        teams,
     };
     Ok(HttpResponse::Ok().json(results))
 }
@@ -64,8 +67,9 @@ pub async fn get_league(
 #[post("/api/v1/leagues")]
 pub async fn post_league(
     league: web::Json<MiniLeague>,
-    state: web::Data<AppState>
+    state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
+    println!("POST request at /api/v1/leagues");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
     let league = league.into_inner();
     let response = db::add_league(&client, league).await?;
@@ -80,27 +84,24 @@ pub async fn openid_landing(
 ) -> Result<impl Responder, Error> {
     println!("GET request at login/landing");
     let inner = query.into_inner();
-    // let mut keyValuesString = String::new();
-    // for (key, val) in inner.iter() {
-    //     keyValuesString.push_str(&format!("{key}:{val}\n"));
-    // }
-    // println!("{keyValuesString}");
-    // let result: String = reqwest::Client::new()
-    //     .post("https://steamcommunity.com/openid")
-    //     .body("openid.mode=check_authentication\n")
-    //     .send()
-    //     .await
-    //     .expect("should be a response from steam")
-    //     .text()
-    //     .await
-    //     .expect("should be able to get text from response");
-    // let openid_signed = inner
-    //     .get("openid.signed")
-    //     .expect("No openid.signed on request");
+    println!("{inner:?}");
 
-    let openid_identity = inner
-        .get("openid.identity")
-        .expect("No openid.identity on request");
+    match steamapi::verify_authentication_with_steam(&inner).await {
+        Ok(yeah) => match yeah {
+            true => {}
+            false => {
+                return Ok(
+                    HttpResponse::BadRequest().body("Could not verify your identity with Steam")
+                )
+            }
+        },
+        Err(some) => return Ok(HttpResponse::InternalServerError().body(some.to_string())),
+    }
+
+    let openid_identity: &String = match inner.get("openid.identity") {
+        Some(str) => str,
+        None => return Ok(HttpResponse::BadRequest().finish()),
+    };
 
     // let openid_sig = inner.get("openid.sig").expect("No openid.sig on request");
     let steamid = openid_identity.replace("https://steamcommunity.com/openid/id/", "");
@@ -117,9 +118,10 @@ pub async fn openid_landing(
         },
         // user wasn't found
         Err(_) => {
-            let user: User = add_user_with_steamid(&state, &client, &steamid)
-                .await
-                .expect("User addition should not fail");
+            let user: User = match add_user_with_steamid(&state, &client, &steamid).await {
+                Ok(user) => user,
+                Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+            };
             get_authorization_for_user(&client, &user).await?
         }
     };
@@ -132,9 +134,8 @@ pub async fn openid_landing(
             ),
         ))
         .append_header(("Location", "/home"))
-        .body(format!("{auth:?}")))
+        .finish())
 }
-
 
 #[get("/api/v1/user/steamid/{steamid}")]
 pub async fn get_user_from_steamid(
@@ -218,16 +219,14 @@ pub async fn add_user_with_steamid(
 }
 
 #[get("/api/v1/leagues")]
-async fn get_all_leagues(state: web::Data<AppState>) -> Result <HttpResponse, Error> {
+async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     println!("GET request at /api/v1/leagues");
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
-    
+
     let leagues: Vec<League> = db::get_leagues(&client).await?;
 
-
-    Ok(HttpResponse::Ok().json(leagues)) 
+    Ok(HttpResponse::Ok().json(leagues))
 }
-
 
 #[get("/api/v1/teams/{team_id}")]
 async fn get_team(path: web::Path<u32>) -> impl Responder {
@@ -247,7 +246,3 @@ async fn get_openid(data: web::Data<AppState>) -> impl Responder {
         .insert_header(("Location", data.into_inner().steam_auth_url.clone()))
         .body("Redirecting...")
 }
-
-
-
-

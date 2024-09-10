@@ -24,4 +24,18 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      - ./sql/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+      - db_data:/var/lib/postgresql/data
+      - ./sql/initdb.sql:/docker-entrypoint
+
+  adminer:
+    image: adminer
+    restart: always
+    ports: 
+      - 3000:8080
+    depends_on:
+      db:
+        condition: service_healthy
+  
+volumes:
+  db_data:
+

@@ -1,3 +1,4 @@
 [submodule "lucyleague-frontend"]
 	path = lucyleague-frontend
 	url = https://github.com/prplnorangesoda/lucyleague-frontend
+	branch = main

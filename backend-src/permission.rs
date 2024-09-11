@@ -3,6 +3,8 @@
 //! Using a i64 allows us 63 different permissions with one numerical value.
 //! We use an i64 to be able to store this permissions value in Postgres.
 //! This should be enough for now, but in future we can use a second permission value.
+use std::ops::BitAnd;
+
 use num_derive::FromPrimitive;
 use serde::Serialize;
 
@@ -22,6 +24,20 @@ pub enum UserPermission {
     CreateGame = 1 << 3,
 }
 
+impl BitAnd for UserPermission {
+    type Output = i64;
+    fn bitand(self, rhs: Self) -> Self::Output {
+        self as i64 & rhs as i64
+    }
+}
+
+impl BitAnd<i64> for UserPermission {
+    type Output = i64;
+    fn bitand(self, rhs: i64) -> Self::Output {
+        self as i64 & rhs
+    }
+}
+
 impl Serialize for UserPermission {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -32,12 +48,17 @@ impl Serialize for UserPermission {
 }
 
 impl User {
-    /// Perform bitwise AND operation on the permission bitfield to see if it contains `permission`.
-    fn check_has_permission(&self, permission: UserPermission) -> bool {
-        self.permissions & (permission as i64) != 0
+    /// Check if the user has _either_ the permission or admin
+    pub fn admin_or_perm(&self, permission: UserPermission) -> bool {
+        (self.check_has_permission(UserPermission::Admin))
+            || (self.check_has_permission(permission))
     }
-    fn add_permission(&mut self, permission: UserPermission) {
-        if self.permissions & (permission as i64) != 0 {
+    /// Perform bitwise AND operation on the permission bitfield to see if it contains `permission`.
+    pub fn check_has_permission(&self, permission: UserPermission) -> bool {
+        permission & self.permissions != 0
+    }
+    pub fn add_permission(&mut self, permission: UserPermission) {
+        if self.check_has_permission(permission) {
             return;
         }
         self.permissions = self.permissions + permission as i64;

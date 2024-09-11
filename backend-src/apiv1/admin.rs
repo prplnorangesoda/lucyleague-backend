@@ -2,15 +2,18 @@ use std::str::FromStr;
 
 use actix_http::header::TryIntoHeaderValue;
 use actix_web::http::header;
-use actix_web::{get, http, post, web, Error, HttpResponse, Responder};
+use actix_web::{http, post, web, Error, HttpResponse};
+use derive_more::derive::{Debug, Display};
 
 use crate::apiv1::apimodels::*;
 use crate::db;
 use crate::errors::MyError;
 use crate::models::*;
+use crate::permission::UserPermission;
 use crate::AppState;
 use deadpool_postgres::Client;
 
+#[derive(Debug, Display)]
 struct AuthHeader(String);
 
 impl TryIntoHeaderValue for AuthHeader {
@@ -20,12 +23,17 @@ impl TryIntoHeaderValue for AuthHeader {
     }
 }
 
-pub struct AuthHeaderStringError;
+pub enum AuthHeaderStringError {
+    NotBearer,
+}
 
 impl FromStr for AuthHeader {
     type Err = AuthHeaderStringError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(AuthHeader("Hi".to_owned()))
+        match s.starts_with("Bearer ") {
+            true => Ok(AuthHeader(s.replacen("Bearer ", "", 1))),
+            false => Err(AuthHeaderStringError::NotBearer),
+        }
     }
 }
 impl http::header::Header for AuthHeader {
@@ -44,10 +52,25 @@ pub async fn post_league(
     authorization: web::Header<AuthHeader>,
 ) -> Result<HttpResponse, Error> {
     log::debug!("POST request at /api/v1/leagues");
+    log::debug!("Authorization header: {0}", authorization.0 .0);
+    let client = state.pool.get().await.unwrap();
+
+    let user = match db::get_user_from_auth_token(&client, &authorization.0 .0).await {
+        Ok(user) => user,
+        Err(_) => return Ok(HttpResponse::BadRequest().body("Error processing permissions")),
+    };
+
+    // if not admin / can't create league
+    if !user.admin_or_perm(UserPermission::CreateLeague) {
+        return Ok(HttpResponse::Unauthorized().body("Insufficient permissions"));
+    }
+    log::info!("Authorization succeeded, creating a new league");
+    log::trace!("Grabbing pool");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
     let league = league.into_inner();
-    log::trace!("Adding league {0:?}", league);
+    log::debug!("Adding league from: {0:?}", league);
     let response = db::add_league(&client, league).await?;
+    log::trace!("OK response, {response:?}");
 
     Ok(HttpResponse::Ok().json(response))
 }

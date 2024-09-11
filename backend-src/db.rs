@@ -7,6 +7,7 @@ use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
     models::{Authorization, League, MiniLeague, MiniUser, Team, User, UserTeam},
+    permission::UserPermission,
 };
 
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
@@ -46,6 +47,18 @@ pub async fn get_team_players(client: &Client, team: Team) -> Result<Vec<User>, 
         .collect();
 
     mass_get_user_from_internal_id(client, &userids).await
+}
+
+async fn get_user_from_internal_id(client: &Client, userid: i64) -> Result<User, MyError> {
+    let _stmt = "SELECT $table_fields FROM users WHERE id=$1";
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let row = client
+        .query_one(&stmt, &[&userid])
+        .await
+        .map_err(|_| MyError::NotFound)?;
+    Ok(User::from_row_ref(&row).unwrap())
 }
 
 async fn mass_get_user_from_internal_id(
@@ -228,12 +241,37 @@ pub async fn get_users(client: &Client) -> Result<Vec<User>, MyError> {
     Ok(results)
 }
 
+pub async fn set_user_permissions(
+    client: &Client,
+    user: &User,
+    permissions: i64,
+) -> Result<User, MyError> {
+    let _stmt = "UPDATE users SET permissions=$1 WHERE id=$2 RETURNING $table_fields";
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let resp = client
+        .query(&stmt, &[&permissions, &user.id])
+        .await?
+        .iter()
+        .map(|row| User::from_row_ref(row).unwrap())
+        .collect::<Vec<User>>()
+        .pop()
+        .ok_or(MyError::NotFound);
+
+    resp
+}
+
+pub async fn set_super_user(client: &Client, user: &User) -> Result<User, MyError> {
+    set_user_permissions(client, user, UserPermission::Admin as i64).await
+}
+
 pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyError> {
     let _stmt = include_str!("../sql/add_user.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
-    client
+    let resp = client
         .query(
             &stmt,
             &[
@@ -247,5 +285,6 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
         .map(|row| User::from_row_ref(row).unwrap())
         .collect::<Vec<User>>()
         .pop()
-        .ok_or(MyError::NotFound) // more applicable for SELECTs
+        .ok_or(MyError::NotFound); // more applicable for SELECTs
+    resp
 }

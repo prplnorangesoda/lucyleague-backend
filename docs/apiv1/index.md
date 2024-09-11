@@ -23,8 +23,12 @@ If you want to perform a protected action, e.g. create a new league, game, or si
 
 EXAMPLE:
 
+```
 HTTP/1.1 POST /api/v1/leagues
 Authorization: Bearer (token)
+
+{body}
+```
 
 ## Leagues
 

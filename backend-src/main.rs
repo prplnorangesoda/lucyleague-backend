@@ -1,3 +1,20 @@
+/*
+Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 // Main execution and routes.
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
@@ -5,7 +22,6 @@ use actix_web::{web, App, HttpServer};
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
 use inquire::InquireError;
-use log::log;
 use tokio::io;
 use tokio_postgres::NoTls;
 
@@ -107,6 +123,7 @@ async fn main() -> io::Result<()> {
                 pool: pool.clone(),
                 steam_auth_url: auth_url.clone(),
                 steam_api_key: config.steam_api_key.clone(),
+                root_user_steamid: config.root_user_steamid.clone(),
             }))
             .service(get_team)
             .service(get_user_from_steamid)

@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Default, Configuration, Clone)]
 pub struct ExampleConfig {
+    pub root_user_steamid: Option<String>,
     pub steam_api_key: String,
     pub openid_realm: String,
     pub openid_port: String,

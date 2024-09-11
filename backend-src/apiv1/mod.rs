@@ -34,6 +34,7 @@ pub struct AppState {
     pub pool: Pool,
     pub steam_auth_url: String,
     pub steam_api_key: String,
+    pub root_user_steamid: Option<String>,
 }
 
 #[get("/api/v1/leagues/{league_id}")]
@@ -223,7 +224,19 @@ pub async fn add_user_with_steamid(
         permissions: None,
     };
 
-    db::add_user(db_client, user).await
+    let add_user_resp = db::add_user(db_client, user).await?;
+
+    if let Some(rootid) = &state.root_user_steamid {
+        if rootid == steamid {
+            match db::set_super_user(db_client, &add_user_resp).await {
+                Ok(user) => {
+                    log::info!("Set super user {user:?}")
+                }
+                Err(_) => {}
+            };
+        }
+    }
+    Ok(add_user_resp)
 }
 
 #[get("/api/v1/leagues")]

@@ -1,5 +1,5 @@
-use crate::models::MiniLeague;
 // Main execution and routes.
+
 use crate::authorization::get_authorization_for_user;
 use crate::db;
 use crate::errors::MyError;
@@ -55,6 +55,15 @@ pub async fn get_league(
     Ok(HttpResponse::Ok().json(results))
 }
 
+/// All parameters that a valid openid request should have.
+static OPENID_NECESSARY_PARAMETERS: &'static [&'static str] = &[
+    "openid.ns",
+    "openid.claimed_id",
+    "openid.signed",
+    "openid.response_nonce",
+    "openid.op_endpoint",
+];
+
 #[get("/login/landing")]
 pub async fn openid_landing(
     query: web::Query<HashMap<String, String>>,
@@ -63,6 +72,16 @@ pub async fn openid_landing(
     log::debug!("GET request at /login/landing");
     let inner = query.into_inner();
     log::trace!("Query parameters: {inner:?}");
+
+    for key in OPENID_NECESSARY_PARAMETERS {
+        // because key is &&str, we have to dereference it to a pure &str
+        // in order for it to not yell at us in compilation
+        if let None = inner.get(*key) {
+            log::warn!("A malformed OpenId landing was received: {inner:?}");
+            return Ok(HttpResponse::BadRequest()
+                .body("Your openid landing was malformed in some way. Report this!"));
+        }
+    }
 
     match steamapi::verify_authentication_with_steam(&inner).await {
         Ok(yeah) => match yeah {

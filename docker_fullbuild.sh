@@ -18,12 +18,17 @@ fi
 
 cd ..
 
-if command -v docker-compose
+if [ $1 = 'run-tty' ]
 then
-    docker-compose down
-    docker-compose build && docker-compose up
+    docker compose run --service-ports --build -- server
 else
-    docker compose down
-    docker compose build && docker compose up
+    if command -v docker-compose
+    then
+        docker-compose down
+        docker-compose build && docker-compose up
+    else
+        docker compose down
+        docker compose build && docker compose up
+    fi
 fi
 

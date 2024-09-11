@@ -5,17 +5,18 @@ use actix_web::{web, App, HttpServer};
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
 use inquire::InquireError;
+use log::log;
 use tokio::io;
 use tokio_postgres::NoTls;
 
 mod apiv1;
 mod authorization;
-mod permission;
 mod config;
 mod db;
 mod errors;
 mod models;
 mod openid;
+mod permission;
 mod steamapi;
 
 use self::apiv1::*;
@@ -23,49 +24,68 @@ use self::steamapi::PlayerSummaryAccess;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
+    simple_logger::SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .env()
+        .init()
+        .unwrap();
+
+    log::info!("Checking for /out directory");
     if !std::path::Path::new("./lucyleague-frontend/out")
         .try_exists()
         .expect("Could not check if frontend path exists")
     {
-        eprintln!("Could not find lucyleague-frontend/out. Did you compile the frontend submodule?");
+        log::error!(
+            "Could not find lucyleague-frontend/out. Did you compile the frontend submodule?"
+        );
         std::process::exit(1);
     };
+    log::trace!("Successfully found /out dir");
 
+    log::trace!("Loading .env");
     dotenv().expect("Error loading .env file");
 
+    log::trace!("Creating example config");
     let config = ExampleConfig::builder()
         .override_with(EnvSource::new())
         .try_build()
         .expect("Error building config");
 
+    log::trace!("Creating SteamOpenIdConfig");
     let steam_config = openid::SteamOpenIdConfig::new(&format!(
         "http://{0}:{1}/login/landing",
         &config.openid_realm, &config.openid_port
     ));
 
+    log::trace!("Creating SteamOpenId");
     let steam_setup = openid::SteamOpenId::new(steam_config, config.clone());
     let auth_url = steam_setup.get_auth_url();
+
+    log::trace!("Creating a database pool using deadpool_postgres");
     let pool = config.pg.create_pool(None, NoTls).unwrap();
-    
+
     let stmt_text = "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users');";
 
+    log::trace!("Testing if users table exists.");
     let client = pool.get().await.unwrap();
     let stmt = client.prepare(stmt_text).await.unwrap();
     let rows = client.query(&stmt, &[]).await.unwrap();
     let value: bool = rows[0].get(0);
+    log::debug!("Return from Postgres: {value}");
 
-    
     if !value {
-        let ans = match inquire::Confirm::new("No user table found. Would you like to initialize the database?")
+        let ans = match inquire::Confirm::new(
+            "No user table found. Would you like to initialize the database?",
+        )
         .with_default(true)
-        .prompt() {
+        .prompt()
+        {
             Ok(res) => res,
             Err(err) => {
                 if let InquireError::NotTTY = err {
-                    eprintln!("This is not a TTY. Initializing database by default.");
+                    log::info!("This is not a TTY. Initializing database by default.");
                     true
-                }
-                else {
+                } else {
                     panic!("InquireError: {:?}", err);
                 }
             }
@@ -74,16 +94,11 @@ async fn main() -> io::Result<()> {
         if ans {
             db::initdb(&client).await.unwrap();
         }
-        else {
-            panic!("{:?}", ans);
-        }
-        
     }
 
-    println!("{client:?}");
-    println!("{config:?}");
-
+    log::info!("Using this config to run the server: {config:#?}");
     let server = HttpServer::new(move || {
+        log::trace!("Inside the HttpServer closure");
         App::new()
             // NOTE: this CORS is temporary until we release to production
             // don't forget!! TODO
@@ -107,15 +122,15 @@ async fn main() -> io::Result<()> {
             .service(get_openid)
             .service(openid_landing)
             .service(
-                actix_files::Files::new("/", "./lucyleague-frontend/out")
-                    .index_file("index.html"),
+                actix_files::Files::new("/", "./lucyleague-frontend/out").index_file("index.html"),
             )
     })
     .bind((config.server_addr.clone(), config.server_port))?
     .run();
-    println!(
+    log::info!(
         "Server running at http://{}:{}/",
-        &config.server_addr, &config.server_port
+        &config.server_addr,
+        &config.server_port
     );
 
     server.await

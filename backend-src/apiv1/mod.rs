@@ -13,7 +13,7 @@ use deadpool_postgres::{Client, Pool};
 use std::collections::HashMap;
 
 pub mod admin;
-mod apimodels; 
+mod apimodels;
 
 use apimodels::*;
 
@@ -36,13 +36,12 @@ pub struct AppState {
     pub steam_api_key: String,
 }
 
-
 #[get("/api/v1/leagues/{league_id}")]
 pub async fn get_league(
     state: web::Data<AppState>,
     league_id: web::Path<i64>,
 ) -> Result<HttpResponse, Error> {
-    println!("GET request at /api/v1/leagues/league_id");
+    log::debug!("GET request at /api/v1/leagues/league_id");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let league_info = db::get_league(&client, *league_id).await?;
@@ -61,9 +60,9 @@ pub async fn openid_landing(
     query: web::Query<HashMap<String, String>>,
     state: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
-    println!("GET request at login/landing");
+    log::debug!("GET request at /login/landing");
     let inner = query.into_inner();
-    println!("{inner:?}");
+    log::trace!("Query parameters: {inner:?}");
 
     match steamapi::verify_authentication_with_steam(&inner).await {
         Ok(yeah) => match yeah {
@@ -84,19 +83,29 @@ pub async fn openid_landing(
 
     // let openid_sig = inner.get("openid.sig").expect("No openid.sig on request");
     let steamid = openid_identity.replace("https://steamcommunity.com/openid/id/", "");
-    println!("Openid landing received from steamid: {steamid}");
+    log::info!("Openid landing received from steamid: {steamid}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let auth = match db::get_user_from_steamid(&client, &steamid).await {
         // there is a user corresponding
-        Ok(user) => match get_authorization_for_user(&client, &user).await {
-            Ok(auth) => auth,
-            Err(_) => {
-                return Ok(HttpResponse::InternalServerError().body("500 Internal Server Error"))
+        Ok(user) => {
+            log::trace!("User found for steamid {steamid}");
+            match get_authorization_for_user(&client, &user).await {
+                Ok(auth) => {
+                    log::debug!("Assigning {auth:?} to {user:?}");
+                    auth
+                }
+                Err(_) => {
+                    log::error!("Internally failed to get authorization for {user:?}");
+                    return Ok(
+                        HttpResponse::InternalServerError().body("500 Internal Server Error")
+                    );
+                }
             }
-        },
+        }
         // user wasn't found
         Err(_) => {
+            log::info!("Creating a new user with steamid {steamid}");
             let user: User = match add_user_with_steamid(&state, &client, &steamid).await {
                 Ok(user) => user,
                 Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
@@ -121,7 +130,7 @@ pub async fn get_user_from_steamid(
     state: web::Data<AppState>,
     steamid: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    println!("GET request at /api/user/steamid/{steamid}");
+    log::debug!("GET request at /api/v1/user/steamid/{steamid}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let user_res = db::get_user_from_steamid(&client, &steamid).await;
@@ -143,7 +152,7 @@ pub async fn get_user_from_auth_token(
     state: web::Data<AppState>,
     authtoken: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    println!("GET request at /api/user/authtoken/{authtoken}");
+    log::debug!("GET request at /api/v1/user/authtoken/{authtoken}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let user = db::get_user_from_auth_token(&client, &authtoken).await?;
@@ -152,7 +161,7 @@ pub async fn get_user_from_auth_token(
 }
 
 pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
-    println!("GET request at /users");
+    log::debug!("GET request at /api/v1/users");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let users = db::get_users(&client).await?;
@@ -165,9 +174,10 @@ pub async fn add_user(
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     let user_info = user.into_inner();
-    println!(
+    log::debug!(
         "creating user with steamid: {0}, username: {1}",
-        &user_info.steamid, &user_info.username
+        &user_info.steamid,
+        &user_info.username
     );
 
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
@@ -199,7 +209,7 @@ pub async fn add_user_with_steamid(
 
 #[get("/api/v1/leagues")]
 async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
-    println!("GET request at /api/v1/leagues");
+    log::debug!("GET request at /api/v1/leagues");
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let leagues: Vec<League> = db::get_leagues(&client).await?;
@@ -209,9 +219,9 @@ async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Err
 
 #[get("/api/v1/teams/{team_id}")]
 async fn get_team(path: web::Path<u32>) -> impl Responder {
-    println!("GET request at /teams/id");
+    log::debug!("GET request at /teams/id");
     let team_id = path.into_inner();
-    println!("Getting info for team id {team_id}");
+    log::trace!("Getting info for team id {team_id}");
     if team_id != 3 {
         return HttpResponse::NotFound().body("Team id not found");
     }
@@ -220,7 +230,7 @@ async fn get_team(path: web::Path<u32>) -> impl Responder {
 
 #[get("/login")]
 async fn get_openid(data: web::Data<AppState>) -> impl Responder {
-    println!("GET request at /login");
+    log::debug!("GET request at /login");
     HttpResponse::Found()
         .insert_header(("Location", data.into_inner().steam_auth_url.clone()))
         .body("Redirecting...")

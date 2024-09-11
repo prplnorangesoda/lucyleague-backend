@@ -1,6 +1,8 @@
 services:
   server:
     build: .
+    attach: true
+
     ports:
       - "$SERVER_PORT:$SERVER_PORT"
     depends_on:
@@ -9,6 +11,7 @@ services:
     command: ["./target/release/lucyleague"]
 
   db:
+    attach: true
     image: postgres
     container_name: postgres_db
     restart: always
@@ -27,15 +30,5 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./sql/initdb.sql:/docker-entrypoint
 
-  adminer:
-    image: adminer
-    restart: always
-    ports: 
-      - 3000:8080
-    depends_on:
-      db:
-        condition: service_healthy
-  
 volumes:
   db_data:
-

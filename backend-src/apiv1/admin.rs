@@ -43,9 +43,10 @@ pub async fn post_league(
     state: web::Data<AppState>,
     authorization: web::Header<AuthHeader>,
 ) -> Result<HttpResponse, Error> {
-    println!("POST request at /api/v1/leagues");
+    log::debug!("POST request at /api/v1/leagues");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
     let league = league.into_inner();
+    log::trace!("Adding league {0:?}", league);
     let response = db::add_league(&client, league).await?;
 
     Ok(HttpResponse::Ok().json(response))
@@ -57,6 +58,7 @@ pub async fn post_users_team(
     user_team: web::Json<UserTeamBody>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
+    log::debug!("POST request at /api/v1/users/setteam");
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
     let user_team = user_team.into_inner();
     // fetch the team to get its id

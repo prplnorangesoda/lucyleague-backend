@@ -17,7 +17,7 @@ pub struct MiniUser {
 /// A basic user / player.
 ///
 ///
-#[derive(Deserialize, PostgresMapper, Serialize)]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "users")] // singular 'user' is a keyword..
 pub struct User {
     /// Postgres' Primary Key, for all intents and purposes use `steamid`.
@@ -40,20 +40,20 @@ impl From<User> for MiniUser {
     }
 }
 
-#[derive(Deserialize, PostgresMapper, Serialize)]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "leagues")]
 pub struct MiniLeague {
     pub name: String,
 }
 
-#[derive(Deserialize, PostgresMapper, Serialize)]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "leagues")]
 pub struct League {
     pub id: i64,
     pub name: String,
 }
 
-#[derive(Deserialize, PostgresMapper, Serialize)]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "teams")]
 pub struct Team {
     pub id: i64,
@@ -61,14 +61,14 @@ pub struct Team {
     pub team_name: String,
 }
 
-#[derive(Deserialize, PostgresMapper, Serialize)]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "userTeam")]
 pub struct UserTeam {
     pub userid: i64,
     pub teamid: i64,
 }
 
-#[derive(Deserialize, PostgresMapper, Serialize, Debug)]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "authorization")]
 pub struct Authorization {
     pub userid: i64,

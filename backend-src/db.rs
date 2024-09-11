@@ -67,9 +67,10 @@ async fn mass_get_user_from_internal_id(
 }
 
 pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {
+    log::debug!("Getting league {leagueid}");
     let _stmt = "SELECT $table_fields FROM leagues WHERE id=$1;";
     let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
-    println!("{0}", _stmt);
+    log::debug!("Running this statement: {0}", _stmt);
     let stmt = client.prepare(&_stmt).await.unwrap();
 
     let results = client
@@ -200,8 +201,7 @@ pub async fn register_authorization(
     let _stmt = include_str!("../sql/register_auth_token.sql");
     // $table_fields didn't work with this for some reason when i tested it
     let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
-    println!("{}", &_stmt);
-    println!("{}, {}", &user.id, &token);
+    log::debug!("Registering authorization {token} for {0}", &user.id);
     let stmt = client.prepare(&_stmt).await?;
 
     client

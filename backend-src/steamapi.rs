@@ -156,16 +156,17 @@ pub async fn get_user_summary(
     steam_api_key: &String,
     steamid: &str,
 ) -> Result<PlayerSummaryAccess, ApiError> {
+    log::trace!("Checking steam summary for player with id {steamid}");
     let url = format!(
         "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={0}&steamids={1}",
         steam_api_key, steamid
     );
     let body = reqwest::get(url).await?.text().await?;
-    println!("Returned info from Steam: {}", body);
+    log::debug!("Returned info from Steam: {}", body);
 
     let mut basic_info = serde_json::from_str::<SteamReturnInfo>(&body)?;
 
-    println!("Basic return info: {basic_info:?}");
+    log::debug!("Steam basic return info: {basic_info:?}");
     let response_type = match basic_info
         .response
         .players
@@ -182,6 +183,7 @@ pub async fn get_user_summary(
 
     // We can see the whole profile, therefore the response includes everything
     if let ReturnedAccessLevel::All = response_type {
+        log::debug!("Steam response matched All ReturnedAccessLevel");
         let needed_info = serde_json::from_str::<SteamResponseAllInfo>(&body)?
             .response
             .players
@@ -194,6 +196,7 @@ pub async fn get_user_summary(
     }
     // We can't see the whole profile, therefore the response includes only public information.
     else {
+        log::debug!("Steam response matched Private ReturnedAccessLevel");
         Ok(PlayerSummaryAccess::Private {
             public: Box::new(serde_json::from_str(&body)?),
         })
@@ -215,30 +218,4 @@ pub async fn verify_authentication_with_steam(
     steamopenid::verify_auth_keyvalues(key_values_map)
         .await
         .map_err(|err| err.into())
-    // let client = reqwest::Client::builder()
-    //     .redirect(Policy::none())
-    //     .build()?;
-
-    // let mut body_string = String::new();
-    // for (key, value) in key_values_map.iter() {
-    //     body_string.push_str(&format!("{0}={1}&", encode(key), encode(value)))
-    // }
-
-    // body_string.pop();
-    // let body_string = body_string.replace("openid.mode=id_res", "openid.mode=check_authentication");
-    // println!("{body_string}");
-    // let resp = client
-    //     .post("https://steamcommunity.com/openid/login")
-    //     .header("Content-Type", "application/x-www-form-urlencoded")
-    //     .body(body_string)
-    //     .send()
-    //     .await?;
-
-    // if resp.status() != StatusCode::OK {
-    //     println!("{resp:?}");
-    //     return Err(ApiError::Handling);
-    // };
-
-    // let text = resp.text().await?;
-    // Ok(text.contains("is_valid:true"))
 }

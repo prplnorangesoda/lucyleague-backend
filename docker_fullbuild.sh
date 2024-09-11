@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Exit on error / print whatever command we're running
 set -ex
 cd "$(dirname "$0")"
 

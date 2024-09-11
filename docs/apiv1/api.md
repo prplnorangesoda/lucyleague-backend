@@ -4,11 +4,13 @@
 
 ## Permissions
 
+### Type `permissions`
+
 | Name           |  Value   |                                          Comment |
 | :------------- | :------: | -----------------------------------------------: |
-| ADMIN          |   `1`    |                                  All permissions |
+| ADMIN          |   `1`    |                     All permissions (superadmin) |
 | SetPermissions | `1 << 1` |                   Can set permissions for others |
-| CreateLeague   | `1 << 2` | Can create new leagues, and modify existing ones |
+| CreateLeague   | `1 << 2` | Can create new Leagues, and modify existing ones |
 | CreateGame     | `1 << 3` |           Can create new Games between two teams |
 
 A user's permissions are represented through an i64 bitfield of the above values.
@@ -40,9 +42,15 @@ Add a new league. Required permission: CreateLeague
 
 **Body:**
 
-| Key  |     Type |
-| :--- | -------: |
-| name | `string` |
+| Key    |     Type |
+| :----- | -------: |
+| (body) | `League` |
+
+**Response:**
+
+| Key        |     Type |
+| :--------- | -------: |
+| (response) | `League` |
 
 ## Users
 
@@ -55,6 +63,30 @@ Add a new league. Required permission: CreateLeague
 | avatarurl   |      `string` |
 | steamid     |      `string` |
 | username    |      `string` |
+
+A **`MiniUser`** is the same as above, but without an `id` parameter. This is to facilitate easily creating new users.
+
+### GET `/users`
+
+Get all currently registered users.
+
+**Response:**
+
+| Key      |          Type |
+| :------- | ------------: |
+| response | `array[User]` |
+
+### POST `/users`
+
+| Key    |       Type |
+| :----- | ---------: |
+| (body) | `MiniUser` |
+
+**Response:**
+
+| Key        |   Type |
+| :--------- | -----: |
+| (response) | `User` |
 
 ### GET `/user/steamid/{steamid}`
 

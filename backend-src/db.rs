@@ -6,7 +6,7 @@ use tokio_pg_mapper::FromTokioPostgresRow;
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
-    models::{Authorization, League, MiniLeague, MiniUser, Team, User, UserTeam},
+    models::{Authorization, League, MiniLeague, MiniTeam, MiniUser, Team, User, UserTeam},
     permission::UserPermission,
 };
 
@@ -34,7 +34,7 @@ pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyE
     results
 }
 
-pub async fn get_team_players(client: &Client, team: Team) -> Result<Vec<User>, MyError> {
+pub async fn get_team_players(client: &Client, team: &Team) -> Result<Vec<User>, MyError> {
     let _stmt = "SELECT $table_fields FROM userTeam WHERE teamid=$1 AND leagueid=$2";
     let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
@@ -125,6 +125,10 @@ pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
         .collect::<Vec<League>>();
     Ok(results)
 }
+
+// pub async fn add_team(client: &Client, league: League, team: &MiniTeam) -> Result<Team, MyError> {
+//     let _stmt = "INSERT INTO teams(leagueid, teamname)"
+// }
 
 pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, MyError> {
     let _stmt = "INSERT INTO leagues(name) VALUES ($1) RETURNING $table_fields";

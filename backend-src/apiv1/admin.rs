@@ -88,6 +88,6 @@ pub async fn post_users_team(
     let user_team = user_team.into_inner();
     // fetch the team to get its id
     let team = db::get_team_from_id(&client, user_team.team_id).await?;
-    let users = db::get_team_players(&client, team).await?;
+    let users = db::get_team_players(&client, &team).await?;
     Ok(HttpResponse::Ok().json(users))
 }

@@ -55,6 +55,13 @@ pub struct League {
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "teams")]
+pub struct MiniTeam {
+    pub leagueid: i64,
+    pub team_name: String,
+}
+
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
+#[pg_mapper(table = "teams")]
 pub struct Team {
     pub id: i64,
     pub leagueid: i64,

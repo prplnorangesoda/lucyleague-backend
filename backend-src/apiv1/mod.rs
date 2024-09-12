@@ -8,8 +8,10 @@ use crate::models::MiniUser;
 use crate::models::User;
 use crate::steamapi;
 use crate::PlayerSummaryAccess;
-use actix_web::{get, post, web, Error, HttpResponse, Responder};
+use actix_web::{get, web, Error, HttpResponse, Responder};
 use deadpool_postgres::{Client, Pool};
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 
 pub mod admin;
@@ -57,7 +59,7 @@ pub async fn get_league(
 }
 
 /// All parameters that a valid openid request should have.
-static OPENID_NECESSARY_PARAMETERS: &'static [&'static str] = &[
+static OPENID_NECESSARY_PARAMETERS: &[&str] = &[
     "openid.ns",
     "openid.claimed_id",
     "openid.signed",
@@ -77,7 +79,7 @@ pub async fn openid_landing(
     for key in OPENID_NECESSARY_PARAMETERS {
         // because key is &&str, we have to dereference it to a pure &str
         // in order for it to not yell at us in compilation
-        if let None = inner.get(*key) {
+        if inner.contains_key(*key) {
             log::warn!("A malformed OpenId landing was received: {inner:?}");
             return Ok(HttpResponse::BadRequest()
                 .body("Your openid landing was malformed in some way. Report this!"));
@@ -228,11 +230,8 @@ pub async fn add_user_with_steamid(
 
     if let Some(rootid) = &state.root_user_steamid {
         if rootid == steamid {
-            match db::set_super_user(db_client, &add_user_resp).await {
-                Ok(user) => {
-                    log::info!("Set super user {user:?}")
-                }
-                Err(_) => {}
+            if let Ok(user) = db::set_super_user(db_client, &add_user_resp).await {
+                log::info!("Set super user {user:?}")
             };
         }
     }
@@ -249,19 +248,35 @@ async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Err
     Ok(HttpResponse::Ok().json(leagues))
 }
 
+#[derive(Serialize, Deserialize)]
+struct TeamResponse {
+    pub id: i64,
+    pub leagueid: i64,
+    pub team_name: String,
+    pub players: Vec<User>,
+}
+
 #[get("/api/v1/teams/{team_id}")]
-async fn get_team(path: web::Path<u32>) -> impl Responder {
-    log::debug!("GET request at /teams/id");
+async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<HttpResponse, Error> {
+    log::debug!("GET request at /api/v1/teams/{path}");
     let team_id = path.into_inner();
-    log::trace!("Getting info for team id {team_id}");
-    if team_id != 3 {
-        return HttpResponse::NotFound().body("Team id not found");
+    if team_id < 0 {
+        return Err(MyError::NotFound.into());
     }
-    HttpResponse::Ok().body(format!("Team {team_id}"))
+    let client = state.pool.get().await.map_err(MyError::PoolError)?;
+    let team = db::get_team_from_id(&client, team_id).await?;
+    let players = db::get_team_players(&client, &team).await?;
+    let resp = TeamResponse {
+        id: team.id,
+        leagueid: team.leagueid,
+        team_name: team.team_name,
+        players,
+    };
+    Ok(HttpResponse::Ok().json(resp))
 }
 
 #[get("/login")]
-async fn get_openid(data: web::Data<AppState>) -> impl Responder {
+async fn get_openid(data: web::Data<AppState>) -> HttpResponse {
     log::debug!("GET request at /login");
     HttpResponse::Found()
         .insert_header(("Location", data.into_inner().steam_auth_url.clone()))

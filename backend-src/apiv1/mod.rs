@@ -58,9 +58,8 @@ pub async fn get_league(
     };
     Ok(HttpResponse::Ok().json(results))
 }
-
 /// All parameters that a valid openid request should have.
-static OPENID_NECESSARY_PARAMETERS: &[&str] = &[
+const OPENID_NECESSARY_PARAMETERS: &[&str] = &[
     "openid.ns",
     "openid.claimed_id",
     "openid.signed",
@@ -73,14 +72,14 @@ pub async fn openid_landing(
     query: web::Query<HashMap<String, String>>,
     state: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
-    log::debug!("GET request at /login/landing");
+    log::info!("GET request at /login/landing");
     let inner = query.into_inner();
     log::trace!("Query parameters: {inner:?}");
 
     for key in OPENID_NECESSARY_PARAMETERS {
         // because key is &&str, we have to dereference it to a pure &str
         // in order for it to not yell at us in compilation
-        if inner.contains_key(*key) {
+        if !inner.contains_key(*key) {
             log::warn!("A malformed OpenId landing was received: {inner:?}");
             return Ok(HttpResponse::BadRequest()
                 .body("Your openid landing was malformed in some way. Report this!"));
@@ -153,7 +152,7 @@ pub async fn get_user_from_steamid(
     state: web::Data<AppState>,
     steamid: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    log::debug!("GET request at /api/v1/user/steamid/{steamid}");
+    log::info!("GET request at /api/v1/user/steamid/{steamid}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let user_res = db::get_user_from_steamid(&client, &steamid).await;
@@ -175,7 +174,7 @@ pub async fn get_user_from_auth_token(
     state: web::Data<AppState>,
     authtoken: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    log::debug!("GET request at /api/v1/user/authtoken/{authtoken}");
+    log::info!("GET request at /api/v1/user/authtoken/{authtoken}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let user = db::get_user_from_auth_token(&client, &authtoken).await?;
@@ -184,7 +183,7 @@ pub async fn get_user_from_auth_token(
 }
 
 pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
-    log::debug!("GET request at /api/v1/users");
+    log::info!("GET request at /api/v1/users");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let users = db::get_users(&client).await?;
@@ -241,7 +240,7 @@ pub async fn add_user_with_steamid(
 
 #[get("/api/v1/leagues")]
 async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
-    log::debug!("GET request at /api/v1/leagues");
+    log::info!("GET request at /api/v1/leagues");
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let leagues: Vec<League> = db::get_leagues(&client).await?;
@@ -259,7 +258,7 @@ struct TeamResponse {
 
 #[get("/api/v1/teams/{team_id}")]
 async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<HttpResponse, Error> {
-    log::debug!("GET request at /api/v1/teams/{path}");
+    log::info!("GET request at /api/v1/teams/{path}");
     let team_id = path.into_inner();
     if team_id < 0 {
         return Err(MyError::NotFound.into());
@@ -280,7 +279,7 @@ async fn post_team(
     state: web::Data<AppState>,
     new_team: web::Json<MiniTeam>,
 ) -> Result<HttpResponse, Error> {
-    log::debug!("POST request at /api/v1/teams");
+    log::info!("POST request at /api/v1/teams");
     let team = new_team.into_inner();
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
     let leagueid = team.leagueid;
@@ -298,7 +297,7 @@ async fn post_team(
 
 #[get("/login")]
 async fn get_openid(data: web::Data<AppState>) -> HttpResponse {
-    log::debug!("GET request at /login");
+    log::info!("GET request at /login");
     HttpResponse::Found()
         .insert_header(("Location", data.into_inner().steam_auth_url.clone()))
         .body("Redirecting...")

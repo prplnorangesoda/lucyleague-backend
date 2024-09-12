@@ -61,7 +61,7 @@ impl User {
         if self.check_has_permission(permission) {
             return;
         }
-        self.permissions = self.permissions + permission as i64;
+        self.permissions += permission as i64;
     }
 }
 

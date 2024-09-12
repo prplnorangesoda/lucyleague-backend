@@ -64,6 +64,8 @@ pub async fn post_league(
     if !user.admin_or_perm(UserPermission::CreateLeague) {
         return Ok(HttpResponse::Unauthorized().body("Insufficient permissions"));
     }
+
+    // Actually create the new league
     log::info!("Authorization succeeded, creating a new league");
     log::trace!("Grabbing pool");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;

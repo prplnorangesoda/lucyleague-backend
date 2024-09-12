@@ -57,12 +57,12 @@ pub async fn post_league(
 
     let user = match db::get_user_from_auth_token(&client, &authorization.0 .0).await {
         Ok(user) => user,
-        Err(_) => return Ok(HttpResponse::BadRequest().body("Error processing permissions")),
+        Err(_) => return Ok(HttpResponse::Unauthorized().body("Error processing permissions")),
     };
 
     // if not admin / can't create league
     if !user.admin_or_perm(UserPermission::CreateLeague) {
-        return Ok(HttpResponse::Unauthorized().body("Insufficient permissions"));
+        return Ok(HttpResponse::Forbidden().body("Insufficient permissions"));
     }
 
     // Actually create the new league

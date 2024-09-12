@@ -44,6 +44,7 @@ impl From<User> for MiniUser {
 #[pg_mapper(table = "leagues")]
 pub struct MiniLeague {
     pub name: String,
+    pub accepting_teams: bool,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
@@ -51,6 +52,7 @@ pub struct MiniLeague {
 pub struct League {
     pub id: i64,
     pub name: String,
+    pub accepting_teams: bool,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]

@@ -4,11 +4,12 @@ use crate::authorization::get_authorization_for_user;
 use crate::db;
 use crate::errors::MyError;
 use crate::models::League;
+use crate::models::MiniTeam;
 use crate::models::MiniUser;
 use crate::models::User;
 use crate::steamapi;
 use crate::PlayerSummaryAccess;
-use actix_web::{get, web, Error, HttpResponse, Responder};
+use actix_web::{get, post, web, Error, HttpResponse, Responder};
 use deadpool_postgres::{Client, Pool};
 use serde::Deserialize;
 use serde::Serialize;
@@ -47,7 +48,7 @@ pub async fn get_league(
     log::debug!("GET request at /api/v1/leagues/league_id");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
-    let league_info = db::get_league(&client, *league_id).await?;
+    let league_info = db::get_league_from_id(&client, *league_id).await?;
 
     let teams = db::get_teams_with_leagueid(&client, *league_id).await?;
 
@@ -206,7 +207,7 @@ pub async fn add_user(
 
     let new_user = db::add_user(&client, user_info).await?;
 
-    Ok(HttpResponse::Ok().json(new_user))
+    Ok(HttpResponse::Created().json(new_user))
 }
 
 pub async fn add_user_with_steamid(
@@ -272,7 +273,27 @@ async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<Ht
         team_name: team.team_name,
         players,
     };
-    Ok(HttpResponse::Ok().json(resp))
+    Ok(HttpResponse::Created().json(resp))
+}
+#[post("/api/v1/teams")]
+async fn post_team(
+    state: web::Data<AppState>,
+    new_team: web::Json<MiniTeam>,
+) -> Result<HttpResponse, Error> {
+    log::debug!("POST request at /api/v1/teams");
+    let team = new_team.into_inner();
+    let client = state.pool.get().await.map_err(MyError::PoolError)?;
+    let leagueid = team.leagueid;
+    let league = match db::get_league_from_id(&client, leagueid).await {
+        Ok(league) => league,
+        Err(e) => return Ok(HttpResponse::NotFound().body("League not found with id ${leagueid}")),
+    };
+    if !league.accepting_teams {
+        return Ok(HttpResponse::BadRequest().body("League not accepting new teams"));
+    }
+
+    let resp = db::add_team(&client, &team).await?;
+    Ok(HttpResponse::Created().json(resp))
 }
 
 #[get("/login")]

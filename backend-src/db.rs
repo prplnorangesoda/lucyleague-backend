@@ -34,6 +34,21 @@ pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyE
     results
 }
 
+pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError> {
+    let _stmt = "INSERT INTO teams(leagueid, team_name) VALUES($1, $2) RETURNING $table_fields";
+    let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    client
+        .query(&stmt, &[&team.leagueid, &team.team_name])
+        .await?
+        .iter()
+        .map(|row| Team::from_row_ref(row).unwrap())
+        .collect::<Vec<Team>>()
+        .pop()
+        .ok_or(MyError::NotFound)
+}
+
 pub async fn get_team_players(client: &Client, team: &Team) -> Result<Vec<User>, MyError> {
     let _stmt = "SELECT $table_fields FROM userTeam WHERE teamid=$1 AND leagueid=$2";
     let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
@@ -79,7 +94,7 @@ async fn mass_get_user_from_internal_id(
     Ok(users)
 }
 
-pub async fn get_league(client: &Client, leagueid: i64) -> Result<League, MyError> {
+pub async fn get_league_from_id(client: &Client, leagueid: i64) -> Result<League, MyError> {
     log::debug!("Getting league {leagueid}");
     let _stmt = "SELECT $table_fields FROM leagues WHERE id=$1;";
     let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());

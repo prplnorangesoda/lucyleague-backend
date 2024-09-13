@@ -1,0 +1,1 @@
+SELECT $table_fields FROM users WHERE id>$1 ORDER BY id ASC LIMIT 50;

@@ -128,11 +128,8 @@ async fn main() -> io::Result<()> {
             .service(get_team)
             .service(get_user_from_steamid)
             .service(get_user_from_auth_token)
-            .service(
-                web::resource("/api/v1/users")
-                    .route(web::get().to(get_users))
-                    .route(web::post().to(add_user)),
-            )
+            .service(web::resource("/api/v1/users").route(web::get().to(get_users)))
+            .service(admin::add_user)
             .service(get_league)
             .service(get_all_leagues)
             .service(admin::post_league)

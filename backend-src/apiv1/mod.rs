@@ -67,7 +67,7 @@ const OPENID_NECESSARY_PARAMETERS: &[&str] = &[
     "openid.op_endpoint",
 ];
 
-#[get("/login/landing")]
+#[get("/api/v1/login/landing")]
 pub async fn openid_landing(
     query: web::Query<HashMap<String, String>>,
     state: web::Data<AppState>,
@@ -143,7 +143,7 @@ pub async fn openid_landing(
                 auth.token, auth.expires
             ),
         ))
-        .append_header(("Location", "/home"))
+        .append_header(("Location", "http://localhost:3000/home"))
         .finish())
 }
 
@@ -295,7 +295,7 @@ async fn post_team(
     Ok(HttpResponse::Created().json(resp))
 }
 
-#[get("/login")]
+#[get("/api/v1/login")]
 async fn get_openid(data: web::Data<AppState>) -> HttpResponse {
     log::info!("GET request at /login");
     HttpResponse::Found()

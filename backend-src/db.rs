@@ -10,6 +10,12 @@ use crate::{
     permission::UserPermission,
 };
 
+pub async fn add_test_data(client: &Client) -> Result<(), MyError> {
+    let _stmt = include_str!("../sql/test_data.sql");
+
+    client.batch_execute(&_stmt).await?;
+    Ok(())
+}
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
     let _stmt = include_str!("../sql/initdb.sql");
 

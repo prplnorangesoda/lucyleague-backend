@@ -18,7 +18,8 @@ Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
 // Main execution and routes.
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
-use actix_web::{web, App, HttpServer};
+use actix_web::{test, web, App, HttpServer};
+use clap::Parser;
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
 use inquire::InquireError;
@@ -38,6 +39,17 @@ mod steamapi;
 use self::apiv1::*;
 use self::steamapi::PlayerSummaryAccess;
 
+#[derive(clap::Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct CommandLineArgs {
+    /// The level of CORS protection to add.
+    ///
+    /// Allowed values: `permissive`, `default`  
+    /// Note: currently there is no difference.
+    #[arg(short, long, default_value_t = String::from("default"))]
+    cors: String,
+}
+
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     simple_logger::SimpleLogger::new()
@@ -45,18 +57,7 @@ async fn main() -> io::Result<()> {
         .env()
         .init()
         .unwrap();
-
-    log::info!("Checking for /out directory");
-    if !std::path::Path::new("./lucyleague-frontend/out")
-        .try_exists()
-        .expect("Could not check if frontend path exists")
-    {
-        log::error!(
-            "Could not find lucyleague-frontend/out. Did you compile the frontend submodule?"
-        );
-        std::process::exit(1);
-    };
-    log::trace!("Successfully found /out dir");
+    let args = CommandLineArgs::parse();
 
     log::trace!("Loading .env");
     dotenv().expect("Error loading .env file");
@@ -69,7 +70,7 @@ async fn main() -> io::Result<()> {
 
     log::trace!("Creating SteamOpenIdConfig");
     let steam_config = openid::SteamOpenIdConfig::new(&format!(
-        "http://{0}:{1}/login/landing",
+        "http://{0}:{1}/api/v1/login/landing",
         &config.openid_realm, &config.openid_port
     ));
 
@@ -112,13 +113,52 @@ async fn main() -> io::Result<()> {
         }
     }
 
+    log::debug!("Checking if users table has any entries");
+    let test_users = "SELECT EXISTS (SELECT * FROM users);";
+    log::trace!("Preparing query SELECT EXISTS FROM USERS");
+    let test_users = client.prepare(&test_users).await.unwrap();
+    log::trace!("Querying");
+    let rows = client.query(&test_users, &[]).await.unwrap();
+    let value: bool = rows[0].get(0);
+
+    if !value {
+        let ans = match inquire::Confirm::new(
+            "Users table is empty. Would you like to initialize it with some test data?",
+        )
+        .with_default(false)
+        .prompt()
+        {
+            Ok(res) => res,
+            Err(err) => {
+                if let InquireError::NotTTY = err {
+                    log::info!("This is not a TTY. Not adding test data. \n\
+                    (If you are in docker, run this service via `docker compose run server` to initialize this server in a TTY.)");
+                    false
+                } else {
+                    panic!("InquireError: {:?}", err);
+                }
+            }
+        };
+
+        if ans {
+            db::add_test_data(&client).await.unwrap();
+        }
+    }
+
     log::info!("Using this config to run the server: {config:#?}");
+    log::info!("Cors function: {0}", args.cors);
+
     let server = HttpServer::new(move || {
+        let cors = match args.cors.as_str() {
+            "permissive" => Cors::permissive(),
+            "default" => Cors::permissive(),
+            _ => panic!("invalid argument provided to --cors"),
+        };
         log::trace!("Inside the HttpServer closure");
         App::new()
             // NOTE: this CORS is temporary until we release to production
             // don't forget!! TODO
-            .wrap(Cors::permissive())
+            .wrap(cors)
             .app_data(web::Data::new(AppState {
                 pool: pool.clone(),
                 steam_auth_url: auth_url.clone(),
@@ -138,14 +178,11 @@ async fn main() -> io::Result<()> {
             .service(admin::post_league)
             .service(get_openid)
             .service(openid_landing)
-            .service(
-                actix_files::Files::new("/", "./lucyleague-frontend/out").index_file("index.html"),
-            )
     })
     .bind((config.server_addr.clone(), config.server_port))?
     .run();
     log::info!(
-        "Server running at http://{}:{}/",
+        "API server running at http://{}:{}/",
         &config.server_addr,
         &config.server_port
     );

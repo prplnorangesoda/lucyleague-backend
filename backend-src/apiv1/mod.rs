@@ -8,6 +8,7 @@ use crate::models::MiniTeam;
 use crate::models::MiniUser;
 use crate::models::User;
 use crate::steamapi;
+use crate::CurrentHost;
 use crate::PlayerSummaryAccess;
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
 use deadpool_postgres::{Client, Pool};
@@ -34,6 +35,7 @@ https://rgl.gg/Login/Default.aspx?push=1&r=40
 &openid.signed=signed%2Cop_endpoint%2Cclaimed_id%2Cidentity%2Creturn_to%2Cresponse_nonce%2Cassoc_handle
 &openid.sig=f9dFKCcwpaGUWp2VsXwMV7csgsU%3D */
 pub struct AppState {
+    pub current_host: CurrentHost,
     pub pool: Pool,
     pub steam_auth_url: String,
     pub steam_api_key: String,
@@ -143,7 +145,10 @@ pub async fn openid_landing(
                 auth.token, auth.expires
             ),
         ))
-        .append_header(("Location", "http://localhost:3000/home"))
+        .append_header((
+            "Location",
+            format!("http://{0}:80/home", state.current_host.address),
+        ))
         .finish())
 }
 

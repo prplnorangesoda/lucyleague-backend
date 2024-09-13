@@ -39,6 +39,12 @@ mod steamapi;
 use self::apiv1::*;
 use self::steamapi::PlayerSummaryAccess;
 
+#[derive(Debug)]
+struct CurrentHost {
+    address: String,
+    port: u16,
+}
+
 #[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct CommandLineArgs {
@@ -147,7 +153,7 @@ async fn main() -> io::Result<()> {
 
     log::info!("Using this config to run the server: {config:#?}");
     log::info!("Cors function: {0}", args.cors);
-
+    let server_address = config.server_addr.clone();
     let server = HttpServer::new(move || {
         let cors = match args.cors.as_str() {
             "permissive" => Cors::permissive(),
@@ -160,6 +166,10 @@ async fn main() -> io::Result<()> {
             // don't forget!! TODO
             .wrap(cors)
             .app_data(web::Data::new(AppState {
+                current_host: CurrentHost {
+                    address: server_address.clone(),
+                    port: config.server_port,
+                },
                 pool: pool.clone(),
                 steam_auth_url: auth_url.clone(),
                 steam_api_key: config.steam_api_key.clone(),

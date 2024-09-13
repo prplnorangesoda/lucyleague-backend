@@ -191,24 +191,6 @@ pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error
     Ok(HttpResponse::Ok().json(users))
 }
 
-pub async fn add_user(
-    user: web::Json<MiniUser>,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
-    let user_info = user.into_inner();
-    log::debug!(
-        "creating user with steamid: {0}, username: {1}",
-        &user_info.steamid,
-        &user_info.username
-    );
-
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
-
-    let new_user = db::add_user(&client, user_info).await?;
-
-    Ok(HttpResponse::Created().json(new_user))
-}
-
 pub async fn add_user_with_steamid(
     state: &web::Data<AppState>,
     db_client: &Client,

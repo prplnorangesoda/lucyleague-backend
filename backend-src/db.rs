@@ -3,6 +3,8 @@ use chrono::{DateTime, Utc};
 use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
 
+const ITEMS_PER_PAGE: i64 = 50;
+
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
@@ -312,4 +314,24 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
         .pop()
         .ok_or(MyError::NotFound); // more applicable for SELECTs
     resp
+}
+
+pub async fn get_user_page(client: &Client, page: i64) -> Result<Vec<User>, MyError> {
+    let _stmt = include_str!("../sql/get_users_paged.sql");
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    if page < 0 {
+        return Err(MyError::NotFound);
+    }
+
+    let offset = page * ITEMS_PER_PAGE;
+
+    let resp = client
+        .query(&stmt, &[&offset])
+        .await?
+        .iter()
+        .map(|row| User::from_row_ref(row).unwrap())
+        .collect();
+    Ok(resp)
 }

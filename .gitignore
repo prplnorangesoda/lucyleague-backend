@@ -2,6 +2,7 @@
 *.code-workspace
 hide.txt
 .env
+.env.production
 static/
 target/
 

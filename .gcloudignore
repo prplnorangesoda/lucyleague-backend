@@ -1,5 +1,8 @@
-target/
+lucyleague-frontend
 
-lucyleague-frontend/*
-!lucyleague-frontend/out
-!lucyleague-frontend/out/*
+target/*
+target/release/*
+
+!target/release/lucyleague
+!target/release
+!target

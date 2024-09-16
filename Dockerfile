@@ -1,28 +1,33 @@
 # Rust as the base image (MSRV: 1.79)
 FROM rust:1.79 AS rust-builder
-RUN cargo install cargo-build-dependencies
-RUN cd /tmp && USER=root cargo new --bin lucyleague
-WORKDIR /tmp/lucyleague
+#RUN cargo install cargo-build-dependencies
+RUN cd / && USER=root cargo new --bin lucyleague
+WORKDIR /lucyleague
 # Copy our manifests
 COPY Cargo.toml Cargo.lock ./
 
+# # If you'd like to just copy over your pre-built files to a cloud server somewhere, uncomment below.
+# COPY ./target/release/lucyleague lucyleague
+# COPY .env .env
+# EXPOSE 8080
+# RUN chmod +x ./lucyleague
+# CMD ["./lucyleague"]
+
 # Prebuild and cache our dependencies (in case our source changes)
+RUN cargo install cargo-build-dependencies
 RUN cargo build-dependencies --release
 
 # Copy our source files
 RUN mkdir backend-src
-COPY backend-src /tmp/lucyleague/backend-src
-COPY sql /tmp/lucyleague/sql
+COPY backend-src ./backend-src
+COPY sql ./sql
 
 # Build our source over our dependencies
 RUN cargo build --release
 
 # Copy environment variables
-COPY .env /tmp/lucyleague/.env
+COPY .env ./.env
+COPY .env.production ./.env.production
 EXPOSE 8080
 
-# Copy over our frontend
-RUN echo 'COPYING FRONTEND!'
-RUN mkdir lucyleague-frontend
-COPY ./lucyleague-frontend/out ./lucyleague-frontend/out
 CMD ["./target/release/lucyleague"]

@@ -38,3 +38,6 @@ actix-http = "3.9"
 log = "0.4"
 simple_logger = "5"
 clap = { version = "4.5.17", features = ["derive"] }
+
+[features]
+debug = []

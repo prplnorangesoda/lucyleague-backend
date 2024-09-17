@@ -40,6 +40,12 @@ mod steamapi;
 use self::apiv1::*;
 use self::steamapi::PlayerSummaryAccess;
 
+#[derive(Debug)]
+struct CurrentHost {
+    address: String,
+    port: u16,
+}
+
 #[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct CommandLineArgs {
@@ -148,7 +154,7 @@ async fn main() -> io::Result<()> {
 
     log::info!("Using this config to run the server: {config:#?}");
     log::info!("Cors function: {0}", args.cors);
-
+    let server_address = config.server_addr.clone();
     let server = HttpServer::new(move || {
         let cors = match args.cors.as_str() {
             "permissive" => Cors::permissive(),
@@ -161,6 +167,10 @@ async fn main() -> io::Result<()> {
             // don't forget!! TODO
             .wrap(cors)
             .app_data(web::Data::new(AppState {
+                current_host: CurrentHost {
+                    address: server_address.clone(),
+                    port: config.server_port,
+                },
                 pool: pool.clone(),
                 steam_auth_url: auth_url.clone(),
                 steam_api_key: config.steam_api_key.clone(),
@@ -169,11 +179,8 @@ async fn main() -> io::Result<()> {
             .service(get_team)
             .service(get_user_from_steamid)
             .service(get_user_from_auth_token)
-            .service(
-                web::resource("/api/v1/users")
-                    .route(web::get().to(get_users))
-                    .route(web::post().to(add_user)),
-            )
+            .service(web::resource("/api/v1/users").route(web::get().to(get_users)))
+            .service(admin::add_user)
             .service(get_league)
             .service(get_all_leagues)
             .service(admin::post_league)

@@ -8,6 +8,7 @@ use crate::models::MiniTeam;
 use crate::models::MiniUser;
 use crate::models::User;
 use crate::steamapi;
+use crate::CurrentHost;
 use crate::PlayerSummaryAccess;
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
 use deadpool_postgres::{Client, Pool};
@@ -34,6 +35,7 @@ https://rgl.gg/Login/Default.aspx?push=1&r=40
 &openid.signed=signed%2Cop_endpoint%2Cclaimed_id%2Cidentity%2Creturn_to%2Cresponse_nonce%2Cassoc_handle
 &openid.sig=f9dFKCcwpaGUWp2VsXwMV7csgsU%3D */
 pub struct AppState {
+    pub current_host: CurrentHost,
     pub pool: Pool,
     pub steam_auth_url: String,
     pub steam_api_key: String,
@@ -143,7 +145,10 @@ pub async fn openid_landing(
                 auth.token, auth.expires
             ),
         ))
-        .append_header(("Location", "http://localhost:3000/home"))
+        .append_header((
+            "Location",
+            format!("http://{0}:80/home", state.current_host.address),
+        ))
         .finish())
 }
 
@@ -189,24 +194,6 @@ pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error
     let users = db::get_users(&client).await?;
 
     Ok(HttpResponse::Ok().json(users))
-}
-
-pub async fn add_user(
-    user: web::Json<MiniUser>,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
-    let user_info = user.into_inner();
-    log::debug!(
-        "creating user with steamid: {0}, username: {1}",
-        &user_info.steamid,
-        &user_info.username
-    );
-
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
-
-    let new_user = db::add_user(&client, user_info).await?;
-
-    Ok(HttpResponse::Created().json(new_user))
 }
 
 pub async fn add_user_with_steamid(

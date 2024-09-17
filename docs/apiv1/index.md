@@ -1,8 +1,13 @@
 # API V1 Documentation
 
+Admin panel documentation: [Here](admin/)
+
 **All endpoints are prefixed with /api/v1/**
 
-## Permissions
+Table of contents:
+
+1. [Leagues](#leagues)
+2. [Users](#users)
 
 ### Type `permissions`
 
@@ -16,19 +21,6 @@
 A user's permissions are represented through an i64 bitfield of the above values.
 
 i.e. permission of `0` is nothing, permission of `1` is admin, permission of (binary) `110 (6)` is SetPermissions and CreateLeague.
-
-### Authorizing to endpoints
-
-If you want to perform a protected action, e.g. create a new league, game, or similar, you *must* attach an Authorization header bearing a session token which corresponds to a user who is allowed to perform that action.
-
-EXAMPLE:
-
-```
-HTTP/1.1 POST /api/v1/leagues
-Authorization: Bearer (token)
-
-{body}
-```
 
 ## Leagues
 
@@ -48,22 +40,6 @@ Get all current registered leagues. Array can be empty.
 | Key        |            Type |
 | :--------- | --------------: |
 | (response) | `array[League]` |
-
-### POST `/leagues`
-
-Add a new league. Required permission: CreateLeague
-
-**Body:**
-
-| Key    |     Type |
-| :----- | -------: |
-| name   | `string` |
-
-**Response:**
-
-| Key        |     Type |
-| :--------- | -------: |
-| (response) | `League` |
 
 ## Users
 
@@ -88,18 +64,6 @@ Get all currently registered users.
 | Key      |          Type |
 | :------- | ------------: |
 | response | `array[User]` |
-
-### POST `/users`
-
-| Key    |       Type |
-| :----- | ---------: |
-| (body) | `MiniUser` |
-
-**Response:**
-
-| Key        |   Type |
-| :--------- | -----: |
-| (response) | `User` |
 
 ### GET `/user/steamid/{steamid}`
 

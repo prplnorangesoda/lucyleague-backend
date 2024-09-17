@@ -45,7 +45,26 @@ impl http::header::Header for AuthHeader {
     }
 }
 
-#[post("/api/v1/leagues")]
+#[post("/api/v1/admin/users")]
+pub async fn add_user(
+    user: web::Json<MiniUser>,
+    state: web::Data<AppState>,
+) -> Result<HttpResponse, Error> {
+    let user_info = user.into_inner();
+    log::debug!(
+        "creating user with steamid: {0}, username: {1}",
+        &user_info.steamid,
+        &user_info.username
+    );
+
+    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+
+    let new_user = db::add_user(&client, user_info).await?;
+
+    Ok(HttpResponse::Created().json(new_user))
+}
+
+#[post("/api/v1/admin/leagues")]
 pub async fn post_league(
     league: web::Json<MiniLeague>,
     state: web::Data<AppState>,
@@ -78,7 +97,7 @@ pub async fn post_league(
 }
 
 /// Set a user or multiple users to a team.
-#[post("/api/v1/users/setteam")]
+#[post("/api/v1/admin/setuserteam")]
 pub async fn post_users_team(
     user_team: web::Json<UserTeamBody>,
     state: web::Data<AppState>,

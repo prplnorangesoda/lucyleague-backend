@@ -219,3 +219,9 @@ pub async fn verify_authentication_with_steam(
         .await
         .map_err(|err| err.into())
 }
+
+pub async fn verify_auth_underscores(key_values_map: &str) -> Result<bool, ApiError> {
+    let map: HashMap<String, String> =
+        serde_json::from_str(&key_values_map.replace("__", ".")).unwrap();
+    verify_authentication_with_steam(&map).await
+}

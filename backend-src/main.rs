@@ -161,12 +161,13 @@ async fn main() -> io::Result<()> {
     log::info!("Using this config to run the server: {config:#?}");
     log::info!("Cors function: {0}", args.cors);
     let server_address = config.server_addr.clone();
+    let cors: fn() -> Cors = match args.cors.as_str() {
+        "permissive" => Cors::permissive,
+        "default" => Cors::permissive,
+        _ => panic!("invalid argument provided to --cors"),
+    };
     let server = HttpServer::new(move || {
-        let cors = match args.cors.as_str() {
-            "permissive" => Cors::permissive(),
-            "default" => Cors::permissive(),
-            _ => panic!("invalid argument provided to --cors"),
-        };
+        let cors = cors();
         log::trace!("Inside the HttpServer closure");
         App::new()
             // NOTE: this CORS is temporary until we release to production
@@ -183,17 +184,17 @@ async fn main() -> io::Result<()> {
                 root_user_steamid: config.root_user_steamid.clone(),
             }))
             .service(get_team)
-            .service(get_user_from_steamid)
-            .service(get_user_from_auth_token)
-            .service(web::resource("/api/v1/users").route(web::get().to(get_users)))
+            .service(users::get_user_from_steamid)
+            .service(users::get_user_from_auth_token)
+            .service(web::resource("/api/v1/users").route(web::get().to(users::get_users)))
             .service(admin::add_user)
-            .service(get_league)
+            .service(leagues::get_league)
             .service(get_all_leagues)
             .service(admin::post_league)
-            .service(get_openid)
-            .service(openid_landing)
+            .service(verify_openid_login)
     })
     .bind((config.server_addr.clone(), config.server_port))?
+    .workers(4)
     .run();
     log::info!(
         "API server running at http://{}:{}/",

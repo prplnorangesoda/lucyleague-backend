@@ -1,7 +1,5 @@
 // Code relating to the Authorization model - generation, etc.
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use chrono::{DateTime, Months};
+use chrono::Months;
 use deadpool_postgres::Client;
 use randomizer::Randomizer;
 
@@ -21,23 +19,15 @@ pub async fn create_authorization_for_user(
     user: &User,
 ) -> Result<Authorization, MyError> {
     let token = Randomizer::ALPHANUMERIC(40).string().unwrap();
-    let now = SystemTime::now();
-    let time: i64 = now
-        .duration_since(UNIX_EPOCH)
-        .expect("Somehow before unix epoch")
-        .as_secs()
-        .try_into()
-        .unwrap();
 
-    let date_time: DateTime<chrono::Utc> =
-        DateTime::from_timestamp(time, 0).expect("Timestamp invalid");
+    let time_now = chrono::offset::Utc::now();
 
     register_authorization(
         dbclient,
         &token,
         user,
-        date_time
-            .checked_add_months(Months::new(3))
+        time_now
+            .checked_add_months(Months::new(1))
             .expect("error adding time to expiry"),
     )
     .await

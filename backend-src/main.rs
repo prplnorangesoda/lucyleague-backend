@@ -14,11 +14,12 @@ Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#![allow(dead_code)]
 
 // Main execution and routes.
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
-use actix_web::{test, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use clap::Parser;
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
@@ -116,7 +117,7 @@ async fn main() -> io::Result<()> {
     log::debug!("Checking if users table has any entries");
     let test_users = "SELECT EXISTS (SELECT * FROM users);";
     log::trace!("Preparing query SELECT EXISTS FROM USERS");
-    let test_users = client.prepare(&test_users).await.unwrap();
+    let test_users = client.prepare(test_users).await.unwrap();
     log::trace!("Querying");
     let rows = client.query(&test_users, &[]).await.unwrap();
     let value: bool = rows[0].get(0);

@@ -13,7 +13,7 @@ use crate::{
 pub async fn add_test_data(client: &Client) -> Result<(), MyError> {
     let _stmt = include_str!("../sql/test_data.sql");
 
-    client.batch_execute(&_stmt).await?;
+    client.batch_execute(_stmt).await?;
     Ok(())
 }
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
@@ -41,12 +41,14 @@ pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyE
 }
 
 pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError> {
-    let _stmt = "INSERT INTO teams(leagueid, team_name) VALUES($1, $2) RETURNING $table_fields";
+    let _stmt = "INSERT INTO teams(leagueid, team_name, created_at) VALUES($1, $2, $3) RETURNING $table_fields";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
+    let time_now = chrono::offset::Utc::now();
+
     client
-        .query(&stmt, &[&team.leagueid, &team.team_name])
+        .query(&stmt, &[&team.leagueid, &team.team_name, &time_now])
         .await?
         .iter()
         .map(|row| Team::from_row_ref(row).unwrap())

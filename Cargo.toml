@@ -27,7 +27,7 @@ tokio-pg-mapper-derive = "0.2"
 tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }
 urlencoding = "2.1"
 randomizer = "0.1.2"
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde", "clock"] }
 actix-files = "0.6"
 serde_json = "1.0"
 steamopenid = "0.3"

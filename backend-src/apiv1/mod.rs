@@ -285,7 +285,7 @@ async fn post_team(
     let leagueid = team.leagueid;
     let league = match db::get_league_from_id(&client, leagueid).await {
         Ok(league) => league,
-        Err(e) => return Ok(HttpResponse::NotFound().body("League not found with id ${leagueid}")),
+        Err(_) => return Ok(HttpResponse::NotFound().body("League not found with id ${leagueid}")),
     };
     if !league.accepting_teams {
         return Ok(HttpResponse::BadRequest().body("League not accepting new teams"));

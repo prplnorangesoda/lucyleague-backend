@@ -1,8 +1,8 @@
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tokio_pg_mapper_derive::PostgresMapper;
 
-/// A user without the id.
+/// A user without the id / created_at.
 ///
 /// Useful if you want Postgres to generate an id automatically.
 #[derive(Deserialize, PostgresMapper, Serialize)]
@@ -27,6 +27,7 @@ pub struct User {
     pub avatarurl: String,
     pub steamid: String,
     pub username: String,
+    pub created_at: DateTime<Utc>,
 }
 
 impl From<User> for MiniUser {
@@ -53,6 +54,7 @@ pub struct League {
     pub id: i64,
     pub name: String,
     pub accepting_teams: bool,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
@@ -68,13 +70,16 @@ pub struct Team {
     pub id: i64,
     pub leagueid: i64,
     pub team_name: String,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "userTeam")]
 pub struct UserTeam {
+    pub leagueid: i64,
     pub userid: i64,
     pub teamid: i64,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
@@ -82,5 +87,6 @@ pub struct UserTeam {
 pub struct Authorization {
     pub userid: i64,
     pub token: String,
-    pub expires: DateTime<chrono::Utc>,
+    pub created_at: DateTime<Utc>,
+    pub expires: DateTime<Utc>,
 }

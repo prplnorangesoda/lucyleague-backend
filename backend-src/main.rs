@@ -58,7 +58,7 @@ struct CommandLineArgs {
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    println!("MAKINGLOGGER");
+    println!("Making LOGGER");
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Debug)
         .env()
@@ -66,10 +66,12 @@ async fn main() -> io::Result<()> {
         .unwrap();
     let args = CommandLineArgs::parse();
     log::trace!("Loading .env");
-    if cfg!(feature = "debug") {
-        dotenv().expect("Error loading .env file");
-    } else {
-        dotenvy::from_filename(".env.production").expect("Error loading .env.production file");
+    if !cfg!(feature = "nodotenv") {
+        if cfg!(feature = "debug") {
+            dotenv().expect("Error loading .env file");
+        } else {
+            dotenvy::from_filename(".env.production").expect("Error loading .env.production file");
+        }
     }
 
     log::trace!("Creating example config");

@@ -25,6 +25,7 @@ use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
 use inquire::InquireError;
 use tokio::io;
+use tokio::time::Duration;
 use tokio_postgres::NoTls;
 
 mod apiv1;
@@ -193,6 +194,7 @@ async fn main() -> io::Result<()> {
             .service(admin::post_league)
             .service(verify_openid_login)
     })
+    .keep_alive(Duration::from_secs(70))
     .bind((config.server_addr.clone(), config.server_port))?
     .workers(4)
     .run();

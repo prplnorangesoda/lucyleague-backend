@@ -1,18 +1,9 @@
-use crate::authorization::get_authorization_for_user;
 use crate::db;
 use crate::errors::MyError;
-use crate::models::League;
-use crate::models::MiniTeam;
-use crate::models::MiniUser;
-use crate::models::User;
-use crate::steamapi;
-use crate::CurrentHost;
-use crate::PlayerSummaryAccess;
-use actix_web::{get, post, web, Error, HttpResponse, Responder};
+use actix_web::{get, post, web, Error, HttpResponse};
 use deadpool_postgres::{Client, Pool};
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::HashMap;
 
 use crate::apiv1::LeagueResponse;
 use crate::AppState;

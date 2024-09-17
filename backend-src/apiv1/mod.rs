@@ -1,4 +1,5 @@
-// Main execution and routes.
+//! The user facing API.
+//! Authorization required endpoints are at the module [admin].
 
 use crate::authorization::get_authorization_for_user;
 use crate::db;

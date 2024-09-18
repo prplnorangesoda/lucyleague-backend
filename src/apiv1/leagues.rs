@@ -1,9 +1,7 @@
 use crate::db;
 use crate::errors::MyError;
-use actix_web::{get, post, web, Error, HttpResponse};
-use deadpool_postgres::{Client, Pool};
-use serde::Deserialize;
-use serde::Serialize;
+use actix_web::{get, web, Error, HttpResponse};
+use deadpool_postgres::Client;
 
 use crate::apiv1::LeagueResponse;
 use crate::AppState;

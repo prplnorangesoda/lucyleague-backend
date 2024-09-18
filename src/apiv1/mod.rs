@@ -1,20 +1,20 @@
 //! The user facing API.
 //! Authorization required endpoints are at the module [admin].
 
-use crate::authorization::get_authorization_for_user;
 use crate::db;
 use crate::errors::MyError;
 use crate::models::League;
 use crate::models::MiniTeam;
-use crate::models::MiniUser;
 use crate::models::User;
 use crate::steamapi;
 use crate::CurrentHost;
-use crate::PlayerSummaryAccess;
-use actix_web::{get, post, web, Error, HttpResponse, Responder};
+use actix_web::{get, post, web, Error, HttpResponse};
+use chrono::DateTime;
+use chrono::Utc;
 use deadpool_postgres::{Client, Pool};
 use serde::Deserialize;
 use serde::Serialize;
+
 use std::collections::HashMap;
 
 pub mod admin;
@@ -92,7 +92,13 @@ struct OpenIdFields {
 #[derive(Serialize, Deserialize)]
 struct IsOpenIdValid {
     pub valid: bool,
-    pub token: Option<String>,
+    pub token_info: Option<Token>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Token {
+    pub token: String,
+    pub expires: DateTime<Utc>,
 }
 #[post("/api/v1/verifylogin")]
 pub async fn verify_openid_login(
@@ -101,13 +107,64 @@ pub async fn verify_openid_login(
 ) -> Result<HttpResponse, Error> {
     log::info!("POST at /api/v1/loginverify");
     let encode = serde_json::to_string(&body.0).unwrap();
-    match steamapi::verify_auth_underscores(&encode).await {
-        Ok(is_valid) => Ok(HttpResponse::Ok().json(IsOpenIdValid {
-            valid: is_valid,
-            token: None,
-        })),
-        Err(_) => Ok(HttpResponse::InternalServerError().finish()),
+    let is_valid = match steamapi::verify_auth_underscores(&encode).await {
+        Ok(is_valid) => is_valid,
+        Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+    };
+
+    if !is_valid {
+        return Ok(HttpResponse::BadRequest().json(IsOpenIdValid {
+            valid: false,
+            token_info: None,
+        }));
     }
+
+    let map: HashMap<String, String> = serde_json::from_str(&encode).unwrap();
+    // is valid, return a token
+    let openid_identity: &String = match map.get("openid__identity") {
+        Some(str) => str,
+        None => return Ok(HttpResponse::BadRequest().finish()),
+    };
+
+    // let openid_sig = inner.get("openid.sig").expect("No openid.sig on request");
+    let steamid = openid_identity.replace("https://steamcommunity.com/openid/id/", "");
+    log::info!("Openid landing received from steamid: {steamid}");
+    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+
+    let auth = match db::get_user_from_steamid(&client, &steamid).await {
+        // there is a user corresponding
+        Ok(user) => {
+            log::trace!("User found for steamid {steamid}");
+            match crate::authorization::get_authorization_for_user(&client, &user).await {
+                Ok(auth) => {
+                    log::debug!("Assigning {auth:?} to {user:?}");
+                    auth
+                }
+                Err(_) => {
+                    log::error!("Internally failed to get authorization for {user:?}");
+                    return Ok(
+                        HttpResponse::InternalServerError().body("500 Internal Server Error")
+                    );
+                }
+            }
+        }
+        // user wasn't found
+        Err(_) => {
+            log::info!("Creating a new user with steamid {steamid}");
+            let user: User = match users::add_user_with_steamid(&state, &client, &steamid).await {
+                Ok(user) => user,
+                Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+            };
+            crate::db::get_authorization_for_user(&client, &user).await?
+        }
+    };
+    Ok(HttpResponse::Ok().json(IsOpenIdValid {
+        valid: true,
+        token_info: Some(Token {
+            token: auth.token,
+            expires: auth.expires,
+        }),
+    }))
 }
 
 #[get("/api/v1/leagues")]

@@ -1,0 +1,31 @@
+name: Deploy to API server
+
+on:
+  push:
+    branches:
+      - main
+env:
+  SSH_ASKPASS: ./askpass.sh
+  SSH_ASKPASS_REQUIRE: force
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --release
+      - name: Initialize password
+        run: echo -n echo ${{ secrets.SSHPASSWORD }} > ./askpass.sh && chmod +x ./askpass.sh
+      - name: Copy file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSHHOST }}
+          username: ${{ secrets.SSHUSERNAME }}
+          password: ${{ secrets.SSHPASSWORD }}
+          port: ${{ secrets.SSHPORT }}
+          source: "target/release/lucyleague"
+          target: ~/auto-deploy
+          rm: true
+      - name: Begin running new server file
+        run: ssh -p ${{ secrets.SSHPORT }} ${{ secrets.SSHUSERNAME }}@${{ secrets.SSHHOST }} "killall lucyleague & screen -d -m ./lucyleague"

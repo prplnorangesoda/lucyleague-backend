@@ -28,4 +28,4 @@ jobs:
           target: ~/auto-deploy
           rm: true
       - name: Begin running new server file
-        run: ssh -p ${{ secrets.SSHPORT }} ${{ secrets.SSHUSERNAME }}@${{ secrets.SSHHOST }} "killall lucyleague & screen -d -m ./lucyleague"
+        run: ssh -p ${{ secrets.SSHPORT }} ${{ secrets.SSHUSERNAME }}@${{ secrets.SSHHOST }} "killall lucyleague; screen -d -m ./lucyleague"

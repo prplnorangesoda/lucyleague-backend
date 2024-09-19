@@ -5,7 +5,6 @@ edition = "2021"
 
 [[bin]]
 name = "lucyleague"
-path = "backend-src/main.rs"
 
 [dependencies]
 actix-web = "4"
@@ -41,3 +40,4 @@ clap = { version = "4.5.17", features = ["derive"] }
 
 [features]
 debug = []
+nodotenv = []

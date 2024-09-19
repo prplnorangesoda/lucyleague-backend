@@ -19,7 +19,7 @@ RUN cargo build-dependencies --release
 
 # Copy our source files
 RUN mkdir backend-src
-COPY backend-src ./backend-src
+COPY src ./src
 COPY sql ./sql
 
 # Build our source over our dependencies

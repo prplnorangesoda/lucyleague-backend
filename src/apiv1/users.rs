@@ -58,6 +58,7 @@ pub async fn add_user_with_steamid(
     db_client: &Client,
     steamid: &str,
 ) -> Result<User, MyError> {
+    log::debug!("Adding users with steamid: {steamid}");
     let steam_user_access_level = steamapi::get_user_summary(&state.steam_api_key, steamid).await?;
 
     // hacky oneliner: extract public information regardless of return type
@@ -70,6 +71,7 @@ pub async fn add_user_with_steamid(
         permissions: None,
     };
 
+    log::trace!("Adding user in db");
     let add_user_resp = db::add_user(db_client, user).await?;
 
     if let Some(rootid) = &state.root_user_steamid {

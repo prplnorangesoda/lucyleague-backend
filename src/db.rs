@@ -245,9 +245,10 @@ pub async fn register_authorization(
     let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
     log::debug!("Registering authorization {token} for {0}", &user.id);
     let stmt = client.prepare(&_stmt).await?;
+    let time_now = chrono::offset::Utc::now();
 
     client
-        .query(&stmt, &[&user.id, &token, &expiry])
+        .query(&stmt, &[&user.id, &token, &time_now, &expiry])
         .await?
         .iter()
         .map(|row| Authorization::from_row_ref(row).unwrap())
@@ -300,6 +301,8 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
+    let date = chrono::offset::Utc::now();
+
     let resp = client
         .query(
             &stmt,
@@ -307,6 +310,7 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
                 &user_info.steamid,
                 &user_info.username,
                 &user_info.avatarurl,
+                &date,
             ],
         )
         .await?

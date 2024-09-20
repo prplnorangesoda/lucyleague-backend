@@ -14,6 +14,7 @@ Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
 #![allow(dead_code)]
 
 // Main execution and routes.
@@ -67,6 +68,8 @@ async fn main() -> io::Result<()> {
         .init()
         .unwrap();
     let args = CommandLineArgs::parse();
+
+    let debug: bool = cfg!(feature = "debug");
     log::trace!("Loading .env");
     if !cfg!(feature = "nodotenv") {
         if cfg!(feature = "debug") {
@@ -159,7 +162,9 @@ async fn main() -> io::Result<()> {
         }
     }
 
-    log::info!("Using this config to run the server: {config:#?}");
+    if debug {
+        log::info!("Using this config to run the server: {config:#?}");
+    }
     log::info!("Cors function: {0}", args.cors);
     let server_address = config.server_addr.clone();
     let cors: fn() -> Cors = match args.cors.as_str() {
@@ -184,7 +189,8 @@ async fn main() -> io::Result<()> {
                 steam_api_key: config.steam_api_key.clone(),
                 root_user_steamid: config.root_user_steamid.clone(),
             }))
-            .service(get_team)
+            .service(teams::get_team)
+            .service(teams::post_team)
             .service(users::get_user_from_steamid)
             .service(users::get_user_from_auth_token)
             .service(web::resource("/api/v1/users").route(web::get().to(users::get_users)))

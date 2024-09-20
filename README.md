@@ -1,6 +1,6 @@
 # LucyLeague
 
-Here's the backend for (https://lucyleague.nn.r.appspot.com). Please LET ME KNOW if there's anything stupid here like exposed API keys or insecure thingies.
+Here's the backend for (https://api.league.passtime.tf). Please LET ME KNOW if there's anything stupid here like exposed API keys or insecure thingies.
 
 ## Running locally
 

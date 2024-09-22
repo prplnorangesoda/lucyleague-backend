@@ -6,6 +6,9 @@ use crate::steamapi;
 use crate::PlayerSummaryAccess;
 use actix_web::{get, web, Error, HttpResponse};
 use deadpool_postgres::Client;
+use serde::Deserialize;
+use serde::Serialize;
+use std::num::NonZeroU32;
 
 use crate::AppState;
 
@@ -44,13 +47,41 @@ pub async fn get_user_from_auth_token(
     Ok(HttpResponse::Ok().json(user))
 }
 
-pub async fn get_users(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
-    log::info!("GET request at /api/v1/users");
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+#[derive(Serialize, Deserialize)]
+struct PageRequest {
+    page: Option<u32>,
+    amount_per_page: Option<std::num::NonZero<u32>>,
+}
 
-    let users = db::get_users(&client).await?;
+#[derive(Serialize, Deserialize)]
+struct UserResponse {
+    total_count: i64,
+    page: u32,
+    amount_per_page: std::num::NonZero<u32>,
+    users: Vec<User>,
+}
+#[get("/api/v1/users")]
+pub async fn get_users_paged(
+    state: web::Data<AppState>,
+    query: web::Query<PageRequest>,
+) -> Result<HttpResponse, Error> {
+    let client = state.pool.get().await.unwrap();
+    let amount = query
+        .amount_per_page
+        .unwrap_or(NonZeroU32::new(10).unwrap());
+    let page = query.page.unwrap_or(0);
 
-    Ok(HttpResponse::Ok().json(users))
+    let total_count = db::get_user_count(&client);
+    let users = db::get_user_page(&client, page, amount);
+
+    let joined = futures::future::try_join(total_count, users).await?;
+
+    Ok(HttpResponse::Ok().json(UserResponse {
+        total_count: joined.0,
+        users: joined.1,
+        page,
+        amount_per_page: amount,
+    }))
 }
 
 pub async fn add_user_with_steamid(

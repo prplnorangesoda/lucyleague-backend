@@ -172,6 +172,13 @@ async fn main() -> io::Result<()> {
         "default" => Cors::permissive,
         _ => panic!("invalid argument provided to --cors"),
     };
+
+    let workers: usize = if debug {
+        2
+    } else {
+        std::thread::available_parallelism().unwrap().into()
+    };
+
     let server = HttpServer::new(move || {
         let cors = cors();
         log::trace!("Inside the HttpServer closure");
@@ -193,7 +200,7 @@ async fn main() -> io::Result<()> {
             .service(teams::post_team)
             .service(users::get_user_from_steamid)
             .service(users::get_user_from_auth_token)
-            .service(web::resource("/api/v1/users").route(web::get().to(users::get_users)))
+            .service(users::get_users_paged)
             .service(admin::add_user)
             .service(leagues::get_league)
             .service(get_all_leagues)
@@ -202,7 +209,7 @@ async fn main() -> io::Result<()> {
     })
     .keep_alive(Duration::from_secs(70))
     .bind((config.server_addr.clone(), config.server_port))?
-    .workers(4)
+    .workers(workers)
     .run();
     log::info!(
         "API server running at http://{}:{}/",

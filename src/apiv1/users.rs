@@ -84,6 +84,29 @@ pub async fn get_users_paged(
     }))
 }
 
+#[derive(Serialize, Deserialize)]
+struct SearchQuery {
+    q: String,
+    page: Option<u32>,
+    amount_per_page: Option<std::num::NonZero<u32>>,
+}
+
+#[get("/api/v1/users/search")]
+pub async fn search_users(
+    state: web::Data<AppState>,
+    query: web::Query<SearchQuery>,
+) -> Result<HttpResponse, Error> {
+    let client = state.pool.get().await.unwrap();
+    let amount = query
+        .amount_per_page
+        .unwrap_or(NonZeroU32::new(10).unwrap());
+    let page = query.page.unwrap_or(0);
+
+    let results = db::search_usernames(&client, &query.q, page, amount).await?;
+
+    Ok(HttpResponse::Ok().json(results))
+}
+
 pub async fn add_user_with_steamid(
     state: &web::Data<AppState>,
     db_client: &Client,

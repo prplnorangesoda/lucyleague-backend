@@ -201,6 +201,7 @@ async fn main() -> io::Result<()> {
             .service(users::get_user_from_steamid)
             .service(users::get_user_from_auth_token)
             .service(users::get_users_paged)
+            .service(users::search_users)
             .service(admin::add_user)
             .service(leagues::get_league)
             .service(get_all_leagues)

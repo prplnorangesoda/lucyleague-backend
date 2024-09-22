@@ -333,7 +333,7 @@ pub async fn get_user_page(
     page: u32,
     amount: std::num::NonZero<u32>,
 ) -> Result<Vec<User>, MyError> {
-    log::trace!("Hey");
+    log::trace!("Getting page {page} amount {amount}");
     let _stmt = include_str!("../sql/get_users_paged.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
@@ -345,6 +345,32 @@ pub async fn get_user_page(
 
     let resp = client
         .query(&stmt, &[&offset, &amount])
+        .await?
+        .iter()
+        .map(|row| User::from_row_ref(row).unwrap())
+        .collect();
+    Ok(resp)
+}
+
+pub async fn search_usernames(
+    client: &Client,
+    search_term: &str,
+    page: u32,
+    amount: std::num::NonZero<u32>,
+) -> Result<Vec<User>, MyError> {
+    log::trace!("Searching DB with term {search_term}");
+
+    let amount: u32 = amount.into();
+    let amount: i64 = amount.into();
+    let page: i64 = page.into();
+    let offset: i64 = page * amount;
+
+    let _stmt = include_str!("../sql/fuzzy_search.sql");
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let resp = client
+        .query(&stmt, &[&search_term, &amount, &offset])
         .await?
         .iter()
         .map(|row| User::from_row_ref(row).unwrap())

@@ -1,1 +1,1 @@
-SELECT $table_fields FROM users WHERE id>$1 ORDER BY id ASC LIMIT 50;
+SELECT $table_fields FROM users ORDER BY id ASC LIMIT $2 OFFSET $1;

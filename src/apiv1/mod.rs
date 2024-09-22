@@ -20,6 +20,7 @@ use std::collections::HashMap;
 pub mod admin;
 pub mod leagues;
 pub mod login;
+pub mod teams;
 pub mod users;
 
 mod apimodels;
@@ -109,7 +110,10 @@ pub async fn verify_openid_login(
     let encode = serde_json::to_string(&body.0).unwrap();
     let is_valid = match steamapi::verify_auth_underscores(&encode).await {
         Ok(is_valid) => is_valid,
-        Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+        Err(_) => {
+            log::debug!("There was an error reaching out to Steam");
+            return Ok(HttpResponse::InternalServerError().finish());
+        }
     };
 
     if !is_valid {
@@ -123,7 +127,10 @@ pub async fn verify_openid_login(
     // is valid, return a token
     let openid_identity: &String = match map.get("openid__identity") {
         Some(str) => str,
-        None => return Ok(HttpResponse::BadRequest().finish()),
+        None => {
+            log::debug!("There was an error reaching out to Steam");
+            return Ok(HttpResponse::BadRequest().body("Malformed request"));
+        }
     };
 
     // let openid_sig = inner.get("openid.sig").expect("No openid.sig on request");
@@ -153,7 +160,10 @@ pub async fn verify_openid_login(
             log::info!("Creating a new user with steamid {steamid}");
             let user: User = match users::add_user_with_steamid(&state, &client, &steamid).await {
                 Ok(user) => user,
-                Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
+                Err(error_whatever) => {
+                    return Ok(HttpResponse::InternalServerError()
+                        .body(format!("Error: {error_whatever:?}")))
+                }
             };
             crate::db::get_authorization_for_user(&client, &user).await?
         }
@@ -183,43 +193,4 @@ struct TeamResponse {
     pub leagueid: i64,
     pub team_name: String,
     pub players: Vec<User>,
-}
-
-#[get("/api/v1/teams/{team_id}")]
-async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<HttpResponse, Error> {
-    log::info!("GET request at /api/v1/teams/{path}");
-    let team_id = path.into_inner();
-    if team_id < 0 {
-        return Err(MyError::NotFound.into());
-    }
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
-    let team = db::get_team_from_id(&client, team_id).await?;
-    let players = db::get_team_players(&client, &team).await?;
-    let resp = TeamResponse {
-        id: team.id,
-        leagueid: team.leagueid,
-        team_name: team.team_name,
-        players,
-    };
-    Ok(HttpResponse::Created().json(resp))
-}
-#[post("/api/v1/teams")]
-async fn post_team(
-    state: web::Data<AppState>,
-    new_team: web::Json<MiniTeam>,
-) -> Result<HttpResponse, Error> {
-    log::info!("POST request at /api/v1/teams");
-    let team = new_team.into_inner();
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
-    let leagueid = team.leagueid;
-    let league = match db::get_league_from_id(&client, leagueid).await {
-        Ok(league) => league,
-        Err(_) => return Ok(HttpResponse::NotFound().body("League not found with id ${leagueid}")),
-    };
-    if !league.accepting_teams {
-        return Ok(HttpResponse::BadRequest().body("League not accepting new teams"));
-    }
-
-    let resp = db::add_team(&client, &team).await?;
-    Ok(HttpResponse::Created().json(resp))
 }

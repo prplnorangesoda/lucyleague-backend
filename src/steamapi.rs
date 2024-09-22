@@ -46,20 +46,20 @@ pub struct PubliclyAvailableSummary {
     /// The full URL of the player's 184x184 avatar.
     pub avatarfull: String,
     /// Current user status. If the profile is private, will always be Offline.
-    pub personastate: i64,
+    pub personastate: Option<i64>,
     /// Is the profile set up.
-    pub profilestate: i64,
+    pub profilestate: Option<i64>,
     /// The last time the user was online, in unix time.
-    pub lastlogoff: i64,
+    pub lastlogoff: Option<i64>,
     /// Are comments allowed?
-    pub commentpermission: i64,
+    pub commentpermission: Option<i64>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct PrivatelyAvailableSummary {
-    pub realname: String,
-    pub primaryclanid: String,
-    pub timecreated: i64,
+    pub realname: Option<String>,
+    pub primaryclanid: Option<String>,
+    pub timecreated: Option<i64>,
     pub gameid: Option<String>,
     pub gameserverip: Option<String>,
     pub gameextrainfo: Option<String>,
@@ -105,9 +105,9 @@ struct BasicInfoIHateWritingThis {
 }
 #[derive(serde::Deserialize, serde::Serialize)]
 struct AllPlayerInfo {
-    pub realname: String,
-    pub primaryclanid: String,
-    pub timecreated: i64,
+    pub realname: Option<String>,
+    pub primaryclanid: Option<String>,
+    pub timecreated: Option<i64>,
     pub gameid: Option<String>,
     pub gameserverip: Option<String>,
     pub gameextrainfo: Option<String>,
@@ -117,25 +117,25 @@ struct AllPlayerInfo {
     pub locstatecode: Option<String>,
     pub loccityid: Option<String>,
     /// 64bit SteamID of the user.
-    pub steamid: String,
+    pub steamid: Option<String>,
     /// The user's display name.
-    pub personaname: String,
+    pub personaname: Option<String>,
     /// The full URL of the player's Steam Community profile.
-    pub profileurl: String,
+    pub profileurl: Option<String>,
     /// The full URL of the player's 32x32 avatar.
-    pub avatar: String,
+    pub avatar: Option<String>,
     /// The full URL of the player's 64x64 avatar.
-    pub avatarmedium: String,
+    pub avatarmedium: Option<String>,
     /// The full URL of the player's 184x184 avatar.
-    pub avatarfull: String,
+    pub avatarfull: Option<String>,
     /// Current user status. If the profile is private, will always be Offline.
-    pub personastate: i64,
+    pub personastate: Option<i64>,
     /// Is the profile set up.
-    pub profilestate: i64,
+    pub profilestate: Option<i64>,
     /// The last time the user was online, in unix time.
-    pub lastlogoff: i64,
+    pub lastlogoff: Option<i64>,
     /// Are comments allowed?
-    pub commentpermission: i64,
+    pub commentpermission: Option<i64>,
 }
 
 impl PubliclyAvailableSummary {

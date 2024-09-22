@@ -3,8 +3,6 @@ use chrono::{DateTime, Utc};
 use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
 
-const ITEMS_PER_PAGE: i64 = 50;
-
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
@@ -245,9 +243,10 @@ pub async fn register_authorization(
     let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
     log::debug!("Registering authorization {token} for {0}", &user.id);
     let stmt = client.prepare(&_stmt).await?;
+    let time_now = chrono::offset::Utc::now();
 
     client
-        .query(&stmt, &[&user.id, &token, &expiry])
+        .query(&stmt, &[&user.id, &token, &time_now, &expiry])
         .await?
         .iter()
         .map(|row| Authorization::from_row_ref(row).unwrap())
@@ -300,6 +299,8 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
+    let date = chrono::offset::Utc::now();
+
     let resp = client
         .query(
             &stmt,
@@ -307,6 +308,7 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
                 &user_info.steamid,
                 &user_info.username,
                 &user_info.avatarurl,
+                &date,
             ],
         )
         .await?
@@ -318,19 +320,57 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
     resp
 }
 
-pub async fn get_user_page(client: &Client, page: i64) -> Result<Vec<User>, MyError> {
+pub async fn get_user_count(client: &Client) -> Result<i64, MyError> {
+    let stmt = client.prepare("SELECT COUNT(*) FROM users").await.unwrap();
+
+    let resp: i64 = client.query_one(&stmt, &[]).await?.get(0);
+
+    Ok(resp)
+}
+
+pub async fn get_user_page(
+    client: &Client,
+    page: u32,
+    amount: std::num::NonZero<u32>,
+) -> Result<Vec<User>, MyError> {
+    log::trace!("Getting page {page} amount {amount}");
     let _stmt = include_str!("../sql/get_users_paged.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
-    if page < 0 {
-        return Err(MyError::NotFound);
-    }
-
-    let offset = page * ITEMS_PER_PAGE;
+    let amount: u32 = amount.into();
+    let amount: i64 = amount.into();
+    let page: i64 = page.into();
+    let offset: i64 = page * amount;
 
     let resp = client
-        .query(&stmt, &[&offset])
+        .query(&stmt, &[&offset, &amount])
+        .await?
+        .iter()
+        .map(|row| User::from_row_ref(row).unwrap())
+        .collect();
+    Ok(resp)
+}
+
+pub async fn search_usernames(
+    client: &Client,
+    search_term: &str,
+    page: u32,
+    amount: std::num::NonZero<u32>,
+) -> Result<Vec<User>, MyError> {
+    log::trace!("Searching DB with term {search_term}");
+
+    let amount: u32 = amount.into();
+    let amount: i64 = amount.into();
+    let page: i64 = page.into();
+    let offset: i64 = page * amount;
+
+    let _stmt = include_str!("../sql/fuzzy_search.sql");
+    let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let resp = client
+        .query(&stmt, &[&search_term, &amount, &offset])
         .await?
         .iter()
         .map(|row| User::from_row_ref(row).unwrap())

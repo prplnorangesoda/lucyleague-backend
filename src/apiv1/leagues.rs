@@ -4,7 +4,18 @@ use actix_web::{get, web, Error, HttpResponse};
 use deadpool_postgres::Client;
 
 use crate::apiv1::LeagueResponse;
+use crate::models::League;
 use crate::AppState;
+
+#[get("/api/v1/leagues")]
+async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
+    log::info!("GET request at /api/v1/leagues");
+    let client = state.pool.get().await.map_err(MyError::PoolError)?;
+
+    let leagues: Vec<League> = db::get_leagues(&client).await?;
+
+    Ok(HttpResponse::Ok().json(leagues))
+}
 
 #[get("/api/v1/leagues/{league_id}")]
 pub async fn get_league(

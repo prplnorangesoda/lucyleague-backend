@@ -46,6 +46,7 @@ impl From<User> for MiniUser {
 pub struct MiniLeague {
     pub name: String,
     pub accepting_teams: bool,
+    pub is_hidden: bool,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
@@ -55,6 +56,7 @@ pub struct League {
     pub name: String,
     pub accepting_teams: bool,
     pub created_at: DateTime<Utc>,
+    pub is_hidden: bool,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]

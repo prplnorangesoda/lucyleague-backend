@@ -177,16 +177,6 @@ pub async fn verify_openid_login(
     }))
 }
 
-#[get("/api/v1/leagues")]
-async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
-    log::info!("GET request at /api/v1/leagues");
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
-
-    let leagues: Vec<League> = db::get_leagues(&client).await?;
-
-    Ok(HttpResponse::Ok().json(leagues))
-}
-
 #[derive(Serialize, Deserialize)]
 struct TeamResponse {
     pub id: i64,

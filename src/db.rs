@@ -154,12 +154,22 @@ pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
 // }
 
 pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, MyError> {
-    let _stmt = "INSERT INTO leagues(name) VALUES ($1) RETURNING $table_fields";
+    let _stmt = "INSERT INTO leagues(name, accepting_teams, is_hidden, created_at) VALUES ($1, $2, $3, $4) RETURNING $table_fields";
     let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
+    let time_now = chrono::offset::Utc::now();
+
     let results = client
-        .query(&stmt, &[&league.name])
+        .query(
+            &stmt,
+            &[
+                &league.name,
+                &league.accepting_teams,
+                &league.is_hidden,
+                &time_now,
+            ],
+        )
         .await?
         .iter()
         .map(|row| League::from_row_ref(row).unwrap())

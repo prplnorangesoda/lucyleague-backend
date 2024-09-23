@@ -93,7 +93,7 @@ pub async fn post_league(
     let response = db::add_league(&client, league).await?;
     log::trace!("OK response, {response:?}");
 
-    Ok(HttpResponse::Ok().json(response))
+    Ok(HttpResponse::Created().json(response))
 }
 
 /// Set a user or multiple users to a team.

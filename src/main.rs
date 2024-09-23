@@ -183,8 +183,6 @@ async fn main() -> io::Result<()> {
         let cors = cors();
         log::trace!("Inside the HttpServer closure");
         App::new()
-            // NOTE: this CORS is temporary until we release to production
-            // don't forget!! TODO
             .wrap(cors)
             .app_data(web::Data::new(AppState {
                 current_host: CurrentHost {
@@ -204,7 +202,7 @@ async fn main() -> io::Result<()> {
             .service(users::search_users)
             .service(admin::add_user)
             .service(leagues::get_league)
-            .service(get_all_leagues)
+            .service(leagues::get_all_leagues)
             .service(admin::post_league)
             .service(verify_openid_login)
     })

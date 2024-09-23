@@ -13,13 +13,15 @@ CREATE TABLE IF NOT EXISTS leagues (
   id BIGSERIAL PRIMARY KEY,
   name VARCHAR(50) NOT NULL,
 	accepting_teams BOOLEAN DEFAULT FALSE NOT NULL,
+	is_hidden BOOLEAN DEFAULT FALSE NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS teams (
 	id BIGSERIAL PRIMARY KEY,
 	leagueid BIGSERIAL NOT NULL,
-	team_name VARCHAR(200) NOT NULL,
+	team_tag VARCHAR(6) NOT NULL DEFAULT 'Tag',
+	team_name VARCHAR(200) NOT NULL DEFAULT 'Unnamed',
 	created_at TIMESTAMPTZ NOT NULL,
 	CONSTRAINT FK_teams_league FOREIGN KEY (leagueid) references leagues(id)
 );
@@ -51,4 +53,25 @@ CREATE TABLE IF NOT EXISTS authorizations (
 	created_at TIMESTAMPTZ NOT NULL,
 	expires TIMESTAMPTZ NOT NULL,
 	CONSTRAINT FK_authorization_user FOREIGN KEY (userid) references users(id)
+);
+
+CREATE TABLE IF NOT EXISTS team_invites (
+	leagueid BIGSERIAL NOT NULL,
+	teamid BIGSERIAL NOT NULL,
+	to_userid BIGSERIAL NOT NULL,
+	from_userid BIGSERIAL NOT NULL,
+	CONSTRAINT FK_team_invites_leagueid FOREIGN KEY (leagueid) references leagues(id),
+	CONSTRAINT FK_team_invites_teamid FOREIGN KEY (teamid) references teams(id),
+	CONSTRAINT FK_team_invites_to_userid FOREIGN KEY (to_userid) references users(id),
+	CONSTRAINT FK_team_invites_from_userid FOREIGN KEY (from_userid) references users(id)
+);
+
+
+CREATE TABLE IF NOT EXISTS team_join_requests (
+	leagueid BIGSERIAL NOT NULL,
+	teamid BIGSERIAL NOT NULL,
+	from_userid BIGSERIAL NOT NULL,
+	CONSTRAINT team_join_requests_leagueid FOREIGN KEY (leagueid) references leagues(id),
+	CONSTRAINT team_join_requests_teamid FOREIGN KEY (teamid) references teams(id),
+	CONSTRAINT team_join_requests_from_userid FOREIGN KEY (from_userid) references users(id)
 );

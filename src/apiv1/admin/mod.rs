@@ -72,6 +72,8 @@ pub async fn post_league(
 ) -> Result<HttpResponse, Error> {
     log::debug!("POST request at /api/v1/leagues");
     log::debug!("Authorization header: {0}", authorization.0 .0);
+
+    log::trace!("Grabbing pool");
     let client = state.pool.get().await.unwrap();
 
     let user = match db::get_user_from_auth_token(&client, &authorization.0 .0).await {
@@ -86,8 +88,6 @@ pub async fn post_league(
 
     // Actually create the new league
     log::info!("Authorization succeeded, creating a new league");
-    log::trace!("Grabbing pool");
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
     let league = league.into_inner();
     log::debug!("Adding league from: {0:?}", league);
     let response = db::add_league(&client, league).await?;

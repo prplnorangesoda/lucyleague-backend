@@ -3,8 +3,7 @@ FROM rust:1.79 AS rust-builder
 #RUN cargo install cargo-build-dependencies
 RUN cd / && USER=root cargo new --bin lucyleague
 WORKDIR /lucyleague
-# Copy our manifests
-COPY Cargo.toml Cargo.lock ./
+
 
 # # If you'd like to just copy over your pre-built files to a cloud server somewhere, uncomment below.
 # COPY ./target/release/lucyleague lucyleague
@@ -15,6 +14,10 @@ COPY Cargo.toml Cargo.lock ./
 
 # Prebuild and cache our dependencies (in case our source changes)
 RUN cargo install cargo-build-dependencies
+
+# Copy our manifests
+COPY Cargo.toml Cargo.lock ./
+
 RUN cargo build-dependencies --release
 
 # Copy our source files

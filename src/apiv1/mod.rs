@@ -1,6 +1,8 @@
 //! The user facing API.
 //! Authorization required endpoints are at the module [admin].
 
+use crate::authorization;
+use crate::authorization::get_authorization_for_user;
 use crate::db;
 use crate::errors::MyError;
 use crate::models::League;
@@ -46,6 +48,25 @@ pub struct AppState {
     pub steam_auth_url: String,
     pub steam_api_key: String,
     pub root_user_steamid: Option<String>,
+}
+#[derive(Serialize, Deserialize)]
+struct LogoutFields {
+    pub auth_token: String,
+}
+
+#[post("/api/v1/logout")]
+pub async fn logout(
+    body: web::Json<LogoutFields>,
+    state: web::Data<AppState>,
+) -> Result<HttpResponse, Error> {
+    let client = state.pool.get().await.unwrap();
+    let user = match db::get_user_from_auth_token(&client, &body.auth_token).await {
+        Ok(user) => user,
+        Err(err) => return Ok(HttpResponse::BadRequest().body(format!("{err:?}"))),
+    };
+
+    db::revoke_user_authorization(&client, &user).await?;
+    Ok(HttpResponse::Ok().finish())
 }
 
 /// All parameters that a valid openid request should have.
@@ -101,6 +122,7 @@ struct Token {
     pub token: String,
     pub expires: DateTime<Utc>,
 }
+
 #[post("/api/v1/verifylogin")]
 pub async fn verify_openid_login(
     body: web::Json<OpenIdFields>,

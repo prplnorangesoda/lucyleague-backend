@@ -23,6 +23,18 @@ pub async fn initdb(client: &Client) -> Result<(), MyError> {
     Ok(())
 }
 
+pub async fn revoke_user_authorization(client: &Client, user: &User) -> Result<u64, MyError> {
+    let stmt = client
+        .prepare("DELETE FROM authorizations WHERE userid=$1;")
+        .await
+        .unwrap();
+
+    client
+        .execute(&stmt, &[&user.id])
+        .await
+        .map_err(|err| MyError::PGError(err))
+}
+
 pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyError> {
     let _stmt = "SELECT $table_fields FROM teams WHERE teamid=$1";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());

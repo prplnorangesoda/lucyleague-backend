@@ -16,18 +16,28 @@ CREATE TABLE IF NOT EXISTS leagues (
 	is_hidden BOOLEAN DEFAULT FALSE NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE IF NOT EXISTS divisions (
+  id BIGSERIAL PRIMARY KEY,
+	leagueid BIGSERIAL,
+  name VARCHAR(50) NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL,
+	CONSTRAINT FK_divisions_league FOREIGN KEY (leagueid) references leagues(id)
+);
 
 CREATE TABLE IF NOT EXISTS teams (
 	id BIGSERIAL PRIMARY KEY,
 	leagueid BIGSERIAL NOT NULL,
+	divisionid BIGSERIAL NOT NULL,
 	team_tag VARCHAR(6) NOT NULL DEFAULT 'Tag',
 	team_name VARCHAR(200) NOT NULL DEFAULT 'Unnamed',
 	created_at TIMESTAMPTZ NOT NULL,
-	CONSTRAINT FK_teams_league FOREIGN KEY (leagueid) references leagues(id)
+	CONSTRAINT FK_teams_league FOREIGN KEY (leagueid) references leagues(id),
+	CONSTRAINT FK_teams_division FOREIGN KEY (divisionid) references divisions(id)
 );
 
 CREATE TABLE IF NOT EXISTS userTeam (
   leagueid BIGSERIAL NOT NULL,
+	divisionid BIGSERIAL,
 	userid BIGSERIAL NOT NULL,
 	teamid BIGSERIAL NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,

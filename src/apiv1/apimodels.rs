@@ -14,8 +14,3 @@ pub struct UserResponse {
     pub user: User,
     pub teams: Vec<Team>,
 }
-#[derive(Serialize, Deserialize)]
-pub struct LeagueResponse {
-    pub info: League,
-    pub teams: Vec<Team>,
-}

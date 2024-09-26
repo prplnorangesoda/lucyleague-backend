@@ -48,6 +48,23 @@ pub struct MiniLeague {
     pub accepting_teams: bool,
     pub is_hidden: bool,
 }
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
+#[pg_mapper(table = "division_admins")]
+pub struct DivisionAdmin {
+    pub id: i64,
+    pub divisionid: i64,
+    pub userid: i64,
+    pub relation: String,
+}
+
+#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
+#[pg_mapper(table = "divisions")]
+pub struct Division {
+    pub id: i64,
+    pub leagueid: i64,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+}
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "leagues")]

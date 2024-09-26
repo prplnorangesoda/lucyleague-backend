@@ -24,6 +24,15 @@ CREATE TABLE IF NOT EXISTS divisions (
 	CONSTRAINT FK_divisions_league FOREIGN KEY (leagueid) references leagues(id)
 );
 
+CREATE TABLE IF NOT EXISTS division_admins (
+	id BIGSERIAL PRIMARY KEY,
+	divisionid BIGSERIAL NOT NULL,
+	userid BIGSERIAL NOT NULL,
+	relation VARCHAR(50) NOT NULL DEFAULT 'Admin',
+	CONSTRAINT FK_division_admins_user FOREIGN KEY (userid) references users(id),
+	CONSTRAINT FK_division_admins_division FOREIGN KEY (divisionid) references divisions(id)
+);
+
 CREATE TABLE IF NOT EXISTS teams (
 	id BIGSERIAL PRIMARY KEY,
 	leagueid BIGSERIAL NOT NULL,
@@ -41,6 +50,8 @@ CREATE TABLE IF NOT EXISTS userTeam (
 	userid BIGSERIAL NOT NULL,
 	teamid BIGSERIAL NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,
+	ended_at TIMESTAMPTZ NOT NULL,
+	is_leader BOOLEAN NOT NULL,
   CONSTRAINT FK_userTeam_league FOREIGN KEY (leagueid) references leagues(id),
 	CONSTRAINT FK_userTeam_user FOREIGN KEY (userid) references users(id),
 	CONSTRAINT FK_userTeam_team FOREIGN KEY (teamid) references teams(id)
@@ -49,10 +60,12 @@ CREATE TABLE IF NOT EXISTS userTeam (
 CREATE TABLE IF NOT EXISTS games (
 	id BIGSERIAL NOT NULL,
 	title VARCHAR(50),
+	leagueid BIGSERIAL NOT NULL,
 	teamhomeid BIGSERIAL NOT NULL,
 	teamawayid BIGSERIAL NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,
 	played_at TIMESTAMPTZ NOT NULL,
+  CONSTRAINT FK_game_league FOREIGN KEY (leagueid) references leagues(id),
 	CONSTRAINT FK_game_home FOREIGN KEY (teamhomeid) references teams(id),
 	CONSTRAINT FK_game_away FOREIGN KEY (teamawayid) references teams(id)
 );

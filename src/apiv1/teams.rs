@@ -40,7 +40,7 @@ async fn post_team(
     let team = new_team.into_inner();
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
     let leagueid = team.leagueid;
-    let league = match db::get_league_from_id(&client, leagueid).await {
+    let league = match db::leagues::get_league_from_id(&client, leagueid).await {
         Ok(league) => league,
         Err(_) => return Ok(HttpResponse::NotFound().body("League not found with id ${leagueid}")),
     };

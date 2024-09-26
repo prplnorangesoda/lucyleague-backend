@@ -10,6 +10,7 @@ use crate::{
     permission::UserPermission,
 };
 
+pub mod divisions;
 pub mod leagues;
 
 pub async fn add_test_data(client: &Client) -> Result<(), MyError> {

@@ -16,7 +16,36 @@ async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Err
 
     let leagues: Vec<League> = db::leagues::get_leagues(&client).await?;
 
-    Ok(HttpResponse::Ok().json(leagues))
+    let mut league_responses: Vec<LeagueReturn> = Vec::with_capacity(leagues.len());
+
+    for league in leagues {
+        let league_divs: Vec<Division> =
+            db::leagues::get_divs_for_league_id(&client, league.id).await?;
+
+        let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
+
+        for div in league_divs {
+            let _admins = db::divisions::get_admins_for_div_id(&client, div.id).await?;
+            let mut admins = Vec::with_capacity(_admins.len());
+            for admin in _admins.into_iter() {
+                admins.push(AdminInfo {
+                    inner_user_id: admin.id,
+                    relation: admin.relation,
+                })
+            }
+            divisions.push(DivisionOptionalTeams {
+                info: div,
+                admins,
+                teams: None,
+            })
+        }
+        league_responses.push(LeagueReturn {
+            divisions,
+            info: league,
+        })
+    }
+
+    Ok(HttpResponse::Ok().json(league_responses))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -26,7 +55,7 @@ struct AdminInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-struct DivisionOptional {
+struct DivisionOptionalTeams {
     info: Division,
     admins: Vec<AdminInfo>,
     teams: Option<Vec<TeamDivAssociation>>,
@@ -35,7 +64,7 @@ struct DivisionOptional {
 #[derive(Serialize, Deserialize)]
 struct LeagueReturn {
     info: League,
-    divisions: Vec<DivisionOptional>,
+    divisions: Vec<DivisionOptionalTeams>,
 }
 
 #[get("/api/v1/leagues/{league_id}")]
@@ -52,7 +81,7 @@ pub async fn get_league(
     let league_divs: Vec<Division> =
         db::leagues::get_divs_for_league_id(&client, *league_id).await?;
 
-    let mut divisions: Vec<DivisionOptional> = Vec::with_capacity(league_divs.len());
+    let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
     for div in league_divs {
         let _admins = db::divisions::get_admins_for_div_id(&client, div.id).await?;
         let mut admins = Vec::with_capacity(_admins.len());
@@ -63,7 +92,7 @@ pub async fn get_league(
             })
         }
         let teams = db::divisions::get_teams_for_div_id(&client, div.id).await?;
-        divisions.push(DivisionOptional {
+        divisions.push(DivisionOptionalTeams {
             info: div,
             admins,
             teams: Some(teams),

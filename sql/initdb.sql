@@ -29,12 +29,8 @@ CREATE TABLE IF NOT EXISTS division_admins (
 	id BIGSERIAL PRIMARY KEY,
 	divisionid BIGSERIAL NOT NULL,
 	userid BIGSERIAL NOT NULL,
-	username VARCHAR(50) NOT NULL,
-	avatarurl VARCHAR(200) NOT NULL,
 	relation VARCHAR(50) NOT NULL DEFAULT 'Admin',
 	CONSTRAINT FK_division_admins_user FOREIGN KEY (userid) references users(id),
-	CONSTRAINT FK_division_admins_username FOREIGN KEY (username) references users(username),
-	CONSTRAINT FK_division_admins_avatarurl FOREIGN KEY (avatarurl) references users(avatarurl),
 	CONSTRAINT FK_division_admins_division FOREIGN KEY (divisionid) references divisions(id)
 );
 
@@ -48,14 +44,12 @@ CREATE TABLE IF NOT EXISTS teams (
 -- A team can be in multiple leagues at the same time, and have different rosters, while having the same (base) team.
 CREATE TABLE IF NOT EXISTS teamDivAssociations (
 	id BIGSERIAL PRIMARY KEY,
-	team_name VARCHAR(200) NOT NULL DEFAULT 'Unnamed',
 	roster_name VARCHAR(50),
 	teamid BIGSERIAL NOT NULL,
 	divisionid BIGSERIAL NOT NULL,
 	points_up BIGINT NOT NULL DEFAULT 0,
 	points_down BIGINT NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL,
-	CONSTRAINT FK_teamDivAssociation_team_name FOREIGN KEY (team_name) references teams(team_name),
 	CONSTRAINT FK_teamDivAssociation_team FOREIGN KEY (teamid) references teams(id),
 	CONSTRAINT FK_teamDivAssociation_league FOREIGN KEY (leagueid) references leagues(id),
 	CONSTRAINT FK_teamDivAssociation_division FOREIGN KEY (divisionid) references divisions(id)

@@ -1,4 +1,5 @@
 use crate::db;
+use crate::db::divisions::DeepTeamDivAssociation;
 use crate::errors::MyError;
 use actix_web::body::MessageBody;
 use actix_web::{get, web, Error, HttpResponse};
@@ -6,7 +7,7 @@ use deadpool_postgres::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::apiv1::grab_pool;
-use crate::models::{Division, League, Team, TeamDivAssociation};
+use crate::models::{Division, League, Team, TeamDivAssociation, WrappedDivisionAdmin};
 use crate::AppState;
 
 #[get("/api/v1/leagues")]
@@ -25,14 +26,7 @@ async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Err
         let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
 
         for div in league_divs {
-            let _admins = db::divisions::get_admins_for_div_id(&client, div.id).await?;
-            let mut admins = Vec::with_capacity(_admins.len());
-            for admin in _admins.into_iter() {
-                admins.push(AdminInfo {
-                    inner_user_id: admin.id,
-                    relation: admin.relation,
-                })
-            }
+            let admins = db::divisions::get_admins_for_div_id_wrapped(&client, div.id).await?;
             divisions.push(DivisionOptionalTeams {
                 info: div,
                 admins,
@@ -57,8 +51,8 @@ struct AdminInfo {
 #[derive(Serialize, Deserialize)]
 struct DivisionOptionalTeams {
     info: Division,
-    admins: Vec<AdminInfo>,
-    teams: Option<Vec<TeamDivAssociation>>,
+    admins: Vec<WrappedDivisionAdmin>,
+    teams: Option<Vec<DeepTeamDivAssociation>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -83,14 +77,7 @@ pub async fn get_league(
 
     let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
     for div in league_divs {
-        let _admins = db::divisions::get_admins_for_div_id(&client, div.id).await?;
-        let mut admins = Vec::with_capacity(_admins.len());
-        for admin in _admins.into_iter() {
-            admins.push(AdminInfo {
-                inner_user_id: admin.id,
-                relation: admin.relation,
-            })
-        }
+        let admins = db::divisions::get_admins_for_div_id_wrapped(&client, div.id).await?;
         let teams = db::divisions::get_teams_for_div_id(&client, div.id).await?;
         divisions.push(DivisionOptionalTeams {
             info: div,

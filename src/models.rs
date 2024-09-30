@@ -52,8 +52,6 @@ pub struct DivisionAdmin {
     pub id: i64,
     pub divisionid: i64,
     pub userid: i64,
-    pub username: String,
-    pub avatarurl: String,
     pub relation: String,
 }
 
@@ -105,7 +103,6 @@ pub struct UserTeam {
 #[pg_mapper(table = "teamDivAssociations")]
 pub struct TeamDivAssociation {
     pub id: i64,
-    pub team_name: String,
     pub roster_name: Option<String>,
     pub teamid: i64,
     pub divisionid: i64,

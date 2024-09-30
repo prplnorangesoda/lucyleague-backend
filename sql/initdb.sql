@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS leagues (
 CREATE TABLE IF NOT EXISTS divisions (
   id BIGSERIAL PRIMARY KEY,
 	leagueid BIGSERIAL NOT NULL,
-	order INTEGER NOT NULL,
+	prio INT NOT NULL,
   name VARCHAR(50) NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,
 	CONSTRAINT FK_divisions_league FOREIGN KEY (leagueid) references leagues(id)
@@ -51,9 +51,8 @@ CREATE TABLE IF NOT EXISTS teamDivAssociations (
 	points_down BIGINT NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL,
 	CONSTRAINT FK_teamDivAssociation_team FOREIGN KEY (teamid) references teams(id),
-	CONSTRAINT FK_teamDivAssociation_league FOREIGN KEY (leagueid) references leagues(id),
 	CONSTRAINT FK_teamDivAssociation_division FOREIGN KEY (divisionid) references divisions(id)
-)
+);
 
 CREATE TABLE IF NOT EXISTS userTeamAssociation (
 	id BIGSERIAL PRIMARY KEY,
@@ -63,7 +62,7 @@ CREATE TABLE IF NOT EXISTS userTeamAssociation (
 	ended_at TIMESTAMPTZ,
 	is_leader BOOLEAN NOT NULL,
   CONSTRAINT FK_userTeamAssociation_teamdivid FOREIGN KEY (teamdivid) references teamDivAssociations(id),
-	CONSTRAINT FK_userTeamAssociation_user FOREIGN KEY (userid) references users(id),
+	CONSTRAINT FK_userTeamAssociation_user FOREIGN KEY (userid) references users(id)
 );
 
 CREATE TABLE IF NOT EXISTS games (

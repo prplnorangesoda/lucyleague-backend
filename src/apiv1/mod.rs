@@ -59,7 +59,7 @@ pub async fn logout(
     body: web::Json<LogoutFields>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
-    let client = state.pool.get().await.unwrap();
+    let client = grab_pool(&state).await?;
     let user = match db::get_user_from_auth_token(&client, &body.auth_token).await {
         Ok(user) => user,
         Err(err) => return Ok(HttpResponse::BadRequest().body(format!("{err:?}"))),
@@ -123,6 +123,10 @@ struct Token {
     pub expires: DateTime<Utc>,
 }
 
+pub async fn grab_pool(state: &AppState) -> Result<Client, MyError> {
+    state.pool.get().await.map_err(MyError::PoolError)
+}
+
 #[post("/api/v1/verifylogin")]
 pub async fn verify_openid_login(
     body: web::Json<OpenIdFields>,
@@ -158,7 +162,7 @@ pub async fn verify_openid_login(
     // let openid_sig = inner.get("openid.sig").expect("No openid.sig on request");
     let steamid = openid_identity.replace("https://steamcommunity.com/openid/id/", "");
     log::info!("Openid landing received from steamid: {steamid}");
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+    let client: Client = grab_pool(&state).await?;
 
     let auth = match db::get_user_from_steamid(&client, &steamid).await {
         // there is a user corresponding

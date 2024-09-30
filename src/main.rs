@@ -16,6 +16,7 @@ Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
 */
 
 #![allow(dead_code)]
+#![allow(unused_imports)]
 
 // Main execution and routes.
 use crate::config::ExampleConfig;

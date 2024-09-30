@@ -10,14 +10,17 @@ use crate::{
     permission::UserPermission,
 };
 
+pub mod divisions;
+pub mod leagues;
+
 pub async fn add_test_data(client: &Client) -> Result<(), MyError> {
-    let _stmt = include_str!("../sql/test_data.sql");
+    let _stmt = include_str!("../../sql/test_data.sql");
 
     client.batch_execute(_stmt).await?;
     Ok(())
 }
 pub async fn initdb(client: &Client) -> Result<(), MyError> {
-    let _stmt = include_str!("../sql/initdb.sql");
+    let _stmt = include_str!("../../sql/initdb.sql");
 
     client.batch_execute(_stmt).await?;
     Ok(())
@@ -32,7 +35,7 @@ pub async fn revoke_user_authorization(client: &Client, user: &User) -> Result<u
     client
         .execute(&stmt, &[&user.id])
         .await
-        .map_err(|err| MyError::PGError(err))
+        .map_err(MyError::PGError)
 }
 
 pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyError> {
@@ -114,53 +117,6 @@ async fn mass_get_user_from_internal_id(
     Ok(users)
 }
 
-pub async fn get_league_from_id(client: &Client, leagueid: i64) -> Result<League, MyError> {
-    log::debug!("Getting league {leagueid}");
-    let _stmt = "SELECT $table_fields FROM leagues WHERE id=$1;";
-    let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
-    log::debug!("Running this statement: {0}", _stmt);
-    let stmt = client.prepare(&_stmt).await.unwrap();
-
-    let results = client
-        .query(&stmt, &[&leagueid])
-        .await?
-        .iter()
-        .map(|row| League::from_row_ref(row).unwrap())
-        .collect::<Vec<League>>()
-        .pop()
-        .ok_or(MyError::NotFound)?;
-
-    Ok(results)
-}
-
-pub async fn get_teams_with_leagueid(client: &Client, leagueid: i64) -> Result<Vec<Team>, MyError> {
-    let _stmt = "SELECT $table_fields FROM teams WHERE leagueid=$1";
-    let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
-    let stmt = client.prepare(&_stmt).await.unwrap();
-
-    let results = client
-        .query(&stmt, &[&leagueid])
-        .await?
-        .iter()
-        .map(|row| Team::from_row_ref(row).unwrap())
-        .collect::<Vec<Team>>();
-    Ok(results)
-}
-
-pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
-    let _stmt = "SELECT $table_fields FROM leagues;";
-    let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
-    let stmt = client.prepare(&_stmt).await.unwrap();
-
-    let results = client
-        .query(&stmt, &[])
-        .await?
-        .iter()
-        .map(|row| League::from_row_ref(row).unwrap())
-        .collect::<Vec<League>>();
-    Ok(results)
-}
-
 // pub async fn add_team(client: &Client, league: League, team: &MiniTeam) -> Result<Team, MyError> {
 //     let _stmt = "INSERT INTO teams(leagueid, teamname)"
 // }
@@ -191,7 +147,7 @@ pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, M
     Ok(results)
 }
 pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<User, MyError> {
-    let _stmt = include_str!("../sql/get_user_from_authtoken.sql");
+    let _stmt = include_str!("../../sql/get_user_from_authtoken.sql");
     let stmt = client.prepare(_stmt).await.unwrap();
 
     let received_auth = client
@@ -217,7 +173,7 @@ pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<Us
         .ok_or(MyError::NotFound)
 }
 pub async fn get_user_from_steamid(client: &Client, steamid: &str) -> Result<User, MyError> {
-    let _stmt = include_str!("../sql/get_user_from_steamid.sql");
+    let _stmt = include_str!("../../sql/get_user_from_steamid.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -235,7 +191,7 @@ pub async fn get_authorization_for_user(
     client: &Client,
     user: &User,
 ) -> Result<Authorization, MyError> {
-    let _stmt = include_str!("../sql/get_auth_token.sql");
+    let _stmt = include_str!("../../sql/get_auth_token.sql");
     let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
     let stmt = client.prepare(&_stmt).await?;
 
@@ -260,7 +216,7 @@ pub async fn register_authorization(
     user: &User,
     expiry: DateTime<Utc>,
 ) -> Result<Authorization, MyError> {
-    let _stmt = include_str!("../sql/register_auth_token.sql");
+    let _stmt = include_str!("../../sql/register_auth_token.sql");
     // $table_fields didn't work with this for some reason when i tested it
     let _stmt = _stmt.replace("$fields", &Authorization::sql_fields());
     log::debug!("Registering authorization {token} for {0}", &user.id);
@@ -278,7 +234,7 @@ pub async fn register_authorization(
 }
 
 pub async fn get_users(client: &Client) -> Result<Vec<User>, MyError> {
-    let sql_string = include_str!("../sql/get_users.sql");
+    let sql_string = include_str!("../../sql/get_users.sql");
     let sql_string = sql_string.replace("$table_fields", &User::sql_table_fields());
     let sql_string = client.prepare(&sql_string).await.unwrap();
 
@@ -317,7 +273,7 @@ pub async fn set_super_user(client: &Client, user: &User) -> Result<User, MyErro
 }
 
 pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyError> {
-    let _stmt = include_str!("../sql/add_user.sql");
+    let _stmt = include_str!("../../sql/add_user.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -356,7 +312,7 @@ pub async fn get_user_page(
     amount: std::num::NonZero<u32>,
 ) -> Result<Vec<User>, MyError> {
     log::trace!("Getting page {page} amount {amount}");
-    let _stmt = include_str!("../sql/get_users_paged.sql");
+    let _stmt = include_str!("../../sql/get_users_paged.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -387,7 +343,7 @@ pub async fn search_usernames(
     let page: i64 = page.into();
     let offset: i64 = page * amount;
 
-    let _stmt = include_str!("../sql/fuzzy_search.sql");
+    let _stmt = include_str!("../../sql/fuzzy_search.sql");
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 

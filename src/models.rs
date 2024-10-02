@@ -66,6 +66,7 @@ pub struct WrappedDivisionAdmin {
 #[pg_mapper(table = "divisions")]
 pub struct Division {
     pub id: i64,
+    pub prio: i32,
     pub leagueid: i64,
     pub name: String,
     pub created_at: DateTime<Utc>,

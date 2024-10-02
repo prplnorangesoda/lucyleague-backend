@@ -4,15 +4,36 @@ use serde::{Deserialize, Serialize};
 use tokio_pg_mapper::FromTokioPostgresRow;
 
 use crate::{
+    admin::MiniDivision,
     errors::MyError,
-    models::{DivisionAdmin, Team, TeamDivAssociation, WrappedDivisionAdmin},
+    models::{Division, DivisionAdmin, Team, TeamDivAssociation, WrappedDivisionAdmin},
 };
 
+pub async fn add_division(client: &Client, division: MiniDivision) -> Result<Division, MyError> {
+    let _stmt = "INSERT INTO divisions(leagueid, name, prio, created_at) VALUES ($1, $2, 1, $3) RETURNING $table_fields"
+        .replace("$table_fields", &Division::sql_table_fields());
+
+    let stmt = client.prepare(&_stmt).await?;
+
+    let row = client
+        .query_one(
+            &stmt,
+            &[
+                &division.leagueid,
+                &division.name,
+                &chrono::offset::Utc::now(),
+            ],
+        )
+        .await?;
+
+    Ok(Division::from_row(row).unwrap())
+}
 pub async fn get_admins_for_div_id_wrapped(
     client: &Client,
     divisionid: i64,
 ) -> Result<Vec<WrappedDivisionAdmin>, MyError> {
     let div_admins = get_admins_for_div_id(client, divisionid).await?;
+    // TODO: optimize this with a join
 
     let stmt = client
         .prepare("SELECT users.username , users.avatarurl FROM users WHERE id=$1")

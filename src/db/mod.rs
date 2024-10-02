@@ -6,7 +6,10 @@ use tokio_pg_mapper::FromTokioPostgresRow;
 use crate::{
     authorization::create_authorization_for_user,
     errors::MyError,
-    models::{Authorization, League, MiniLeague, MiniTeam, MiniUser, Team, User, UserTeam},
+    models::{
+        Authorization, League, MiniLeague, MiniTeam, MiniUser, Team, TeamDivAssociation, User,
+        UserTeam,
+    },
     permission::UserPermission,
 };
 
@@ -55,6 +58,26 @@ pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyE
     results
 }
 
+pub async fn get_teamdivassociation_from_id(
+    client: &Client,
+    assoc_id: i64,
+) -> Result<TeamDivAssociation, MyError> {
+    let _stmt = "SELECT $table_fields FROM teamDivAssociations WHERE id=$1";
+    let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
+    let stmt = client.prepare(&_stmt).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[&assoc_id])
+        .await?
+        .iter()
+        .map(|row| TeamDivAssociation::from_row_ref(row).unwrap())
+        .collect::<Vec<TeamDivAssociation>>()
+        .pop()
+        .ok_or(MyError::NotFound);
+
+    results
+}
+
 pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError> {
     let _stmt = "INSERT INTO teams(leagueid, team_name, created_at) VALUES($1, $2, $3) RETURNING $table_fields";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
@@ -72,13 +95,16 @@ pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError>
         .ok_or(MyError::NotFound)
 }
 
-pub async fn get_team_players(client: &Client, team: &Team) -> Result<Vec<User>, MyError> {
-    let _stmt = "SELECT $table_fields FROM userTeam WHERE teamid=$1 AND leagueid=$2";
+pub async fn get_team_players(
+    client: &Client,
+    team: &TeamDivAssociation,
+) -> Result<Vec<User>, MyError> {
+    let _stmt = "SELECT $table_fields FROM userTeam WHERE teamid=$1 AND divisionid=$2";
     let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
     let userids: Vec<i64> = client
-        .query(&stmt, &[&team.id, &team.leagueid])
+        .query(&stmt, &[&team.id, &team.divisionid])
         .await?
         .iter()
         .map(|row| UserTeam::from_row_ref(row).unwrap().userid)

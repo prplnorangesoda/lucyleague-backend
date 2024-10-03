@@ -52,15 +52,21 @@ pub struct DivisionAdmin {
     pub id: i64,
     pub divisionid: i64,
     pub userid: i64,
+    pub relation: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct WrappedDivisionAdmin {
+    pub inner: DivisionAdmin,
     pub username: String,
     pub avatarurl: String,
-    pub relation: String,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "divisions")]
 pub struct Division {
     pub id: i64,
+    pub prio: i32,
     pub leagueid: i64,
     pub name: String,
     pub created_at: DateTime<Utc>,
@@ -81,14 +87,15 @@ pub struct League {
 pub struct MiniTeam {
     pub leagueid: i64,
     pub team_name: String,
+    pub team_tag: String,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "teams")]
 pub struct Team {
     pub id: i64,
-    pub leagueid: i64,
     pub team_name: String,
+    pub team_tag: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -105,7 +112,6 @@ pub struct UserTeam {
 #[pg_mapper(table = "teamDivAssociations")]
 pub struct TeamDivAssociation {
     pub id: i64,
-    pub team_name: String,
     pub roster_name: Option<String>,
     pub teamid: i64,
     pub divisionid: i64,

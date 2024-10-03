@@ -205,10 +205,11 @@ async fn main() -> io::Result<()> {
             .service(leagues::get_league)
             .service(leagues::get_all_leagues)
             .service(admin::post_league)
+            .service(admin::post_league_divisions)
             .service(verify_openid_login)
             .service(logout)
     })
-    .keep_alive(Duration::from_secs(70))
+    .keep_alive(Duration::from_secs(0))
     .bind((config.server_addr.clone(), config.server_port))?
     .workers(workers)
     .run();

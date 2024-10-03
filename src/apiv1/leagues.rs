@@ -1,20 +1,64 @@
 use crate::db;
+use crate::db::divisions::DeepTeamDivAssociation;
 use crate::errors::MyError;
+use actix_web::body::MessageBody;
 use actix_web::{get, web, Error, HttpResponse};
 use deadpool_postgres::Client;
+use serde::{Deserialize, Serialize};
 
-use crate::apiv1::LeagueResponse;
-use crate::models::League;
+use crate::apiv1::grab_pool;
+use crate::models::{Division, League, Team, TeamDivAssociation, WrappedDivisionAdmin};
 use crate::AppState;
 
 #[get("/api/v1/leagues")]
 async fn get_all_leagues(state: web::Data<AppState>) -> Result<HttpResponse, Error> {
     log::info!("GET request at /api/v1/leagues");
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
+    let client = grab_pool(&state).await?;
 
-    let leagues: Vec<League> = db::get_leagues(&client).await?;
+    let leagues: Vec<League> = db::leagues::get_leagues(&client).await?;
 
-    Ok(HttpResponse::Ok().json(leagues))
+    let mut league_responses: Vec<LeagueReturn> = Vec::with_capacity(leagues.len());
+
+    for league in leagues {
+        let league_divs: Vec<Division> =
+            db::leagues::get_divs_for_league_id(&client, league.id).await?;
+
+        let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
+
+        for div in league_divs {
+            let admins = db::divisions::get_admins_for_div_id_wrapped(&client, div.id).await?;
+            divisions.push(DivisionOptionalTeams {
+                info: div,
+                admins,
+                teams: None,
+            })
+        }
+        league_responses.push(LeagueReturn {
+            divisions,
+            info: league,
+        })
+    }
+
+    Ok(HttpResponse::Ok().json(league_responses))
+}
+
+#[derive(Serialize, Deserialize)]
+struct AdminInfo {
+    inner_user_id: i64,
+    relation: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DivisionOptionalTeams {
+    info: Division,
+    admins: Vec<WrappedDivisionAdmin>,
+    teams: Option<Vec<DeepTeamDivAssociation>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct LeagueReturn {
+    info: League,
+    divisions: Vec<DivisionOptionalTeams>,
 }
 
 #[get("/api/v1/leagues/{league_id}")]
@@ -23,15 +67,28 @@ pub async fn get_league(
     league_id: web::Path<i64>,
 ) -> Result<HttpResponse, Error> {
     log::debug!("GET request at /api/v1/leagues/league_id");
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
-    let league_info = db::get_league_from_id(&client, *league_id).await?;
+    let client: Client = grab_pool(&state).await?;
 
-    let teams = db::get_teams_with_leagueid(&client, *league_id).await?;
+    let league_info = db::leagues::get_league_from_id(&client, *league_id).await?;
 
-    let results = LeagueResponse {
+    let league_divs: Vec<Division> =
+        db::leagues::get_divs_for_league_id(&client, *league_id).await?;
+
+    let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
+    for div in league_divs {
+        let admins = db::divisions::get_admins_for_div_id_wrapped(&client, div.id).await?;
+        let teams = db::divisions::get_teams_for_div_id(&client, div.id).await?;
+        divisions.push(DivisionOptionalTeams {
+            info: div,
+            admins,
+            teams: Some(teams),
+        })
+    }
+
+    let resp = LeagueReturn {
         info: league_info,
-        teams,
+        divisions,
     };
-    Ok(HttpResponse::Ok().json(results))
+    Ok(HttpResponse::Ok().json(resp))
 }

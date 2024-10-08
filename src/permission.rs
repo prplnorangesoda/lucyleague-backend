@@ -22,6 +22,8 @@ pub enum UserPermission {
     CreateLeague = 1 << 2,
     /// Can create a new Game between two teams for an existing League.
     CreateGame = 1 << 3,
+    /// Can create new Teams and manage existing ones.
+    CreateTeam = 1 << 4,
 }
 
 impl BitAnd for UserPermission {

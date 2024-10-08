@@ -14,7 +14,7 @@ use crate::AppState;
 use deadpool_postgres::Client;
 
 #[derive(Debug, Display)]
-struct AuthHeader(String);
+pub struct AuthHeader(pub String);
 
 impl TryIntoHeaderValue for AuthHeader {
     type Error = actix_web::error::HttpError;

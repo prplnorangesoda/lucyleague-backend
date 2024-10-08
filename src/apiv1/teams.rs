@@ -70,6 +70,14 @@ async fn post_team(
         return Ok(HttpResponse::BadRequest().body("League not accepting new teams"));
     }
 
-    let resp = db::add_team(&client, &team).await?;
+    let team = db::add_team(&client, &team).await?;
+
+    let resp = db::teams::add_user_team_id(
+        &client,
+        user.id,
+        team.id,
+        db::teams::UserTeamAffiliation::Leader,
+    )
+    .await?;
     Ok(HttpResponse::Created().json(resp))
 }

@@ -15,6 +15,7 @@ use crate::{
 
 pub mod divisions;
 pub mod leagues;
+pub mod teams;
 
 pub async fn add_test_data(client: &Client) -> Result<(), MyError> {
     let _stmt = include_str!("../../sql/test_data.sql");

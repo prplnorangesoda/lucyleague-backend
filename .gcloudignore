@@ -1,8 +1,0 @@
-lucyleague-frontend
-
-target/*
-target/release/*
-
-!target/release/lucyleague
-!target/release
-!target

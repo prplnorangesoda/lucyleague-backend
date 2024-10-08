@@ -64,10 +64,10 @@ pub struct PrivatelyAvailableSummary {
     pub gameserverip: Option<String>,
     pub gameextrainfo: Option<String>,
     #[deprecated(note = "use loccityid")]
-    pub cityid: Option<String>,
+    pub cityid: Option<i64>,
     pub loccountrycode: Option<String>,
     pub locstatecode: Option<String>,
-    pub loccityid: Option<String>,
+    pub loccityid: Option<i64>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -112,10 +112,10 @@ struct AllPlayerInfo {
     pub gameserverip: Option<String>,
     pub gameextrainfo: Option<String>,
     #[deprecated(note = "use loccityid")]
-    pub cityid: Option<String>,
+    pub cityid: Option<i64>,
     pub loccountrycode: Option<String>,
     pub locstatecode: Option<String>,
-    pub loccityid: Option<String>,
+    pub loccityid: Option<i64>,
     /// 64bit SteamID of the user.
     pub steamid: Option<String>,
     /// The user's display name.

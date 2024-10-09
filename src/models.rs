@@ -85,7 +85,6 @@ pub struct League {
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "teams")]
 pub struct MiniTeam {
-    pub leagueid: i64,
     pub team_name: String,
     pub team_tag: String,
 }
@@ -100,7 +99,7 @@ pub struct Team {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "userTeam")]
+#[pg_mapper(table = "userTeamAssociation")]
 pub struct UserTeam {
     pub leagueid: i64,
     pub userid: i64,

@@ -80,14 +80,14 @@ pub async fn get_teamdivassociation_from_id(
 }
 
 pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError> {
-    let _stmt = "INSERT INTO teams(leagueid, team_name, created_at) VALUES($1, $2, $3) RETURNING $table_fields";
+    let _stmt = "INSERT INTO teams(team_tag, team_name, created_at) VALUES($1, $2, $3) RETURNING $table_fields";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
     let time_now = chrono::offset::Utc::now();
 
     client
-        .query(&stmt, &[&team.leagueid, &team.team_name, &time_now])
+        .query(&stmt, &[&team.team_tag, &team.team_name, &time_now])
         .await?
         .iter()
         .map(|row| Team::from_row_ref(row).unwrap())

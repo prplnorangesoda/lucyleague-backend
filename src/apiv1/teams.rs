@@ -12,6 +12,8 @@ use actix_web::{get, post, web, Error, HttpResponse};
 use chrono::DateTime;
 use chrono::Utc;
 use deadpool_postgres::{Client, Pool};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::apiv1::TeamResponse;
 use crate::AppState;
@@ -39,11 +41,17 @@ async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<Ht
     };
     Ok(HttpResponse::Ok().json(resp))
 }
+#[derive(Serialize, Deserialize)]
+struct TeamInfo {
+    pub team_name: String,
+    pub team_tag: String,
+    pub leagueid: i64,
+}
 #[post("/api/v1/teams")]
 async fn post_team(
     state: web::Data<AppState>,
     auth_header: web::Header<super::admin::AuthHeader>,
-    new_team: web::Json<MiniTeam>,
+    new_team: web::Json<TeamInfo>,
 ) -> Result<HttpResponse, Error> {
     log::info!("POST request at /api/v1/teams");
     let auth_token = auth_header.into_inner().0;
@@ -70,7 +78,14 @@ async fn post_team(
         return Ok(HttpResponse::BadRequest().body("League not accepting new teams"));
     }
 
-    let team = db::add_team(&client, &team).await?;
+    let team = db::add_team(
+        &client,
+        &MiniTeam {
+            team_name: team.team_name,
+            team_tag: team.team_tag,
+        },
+    )
+    .await?;
 
     let resp = db::teams::add_user_team_id(
         &client,

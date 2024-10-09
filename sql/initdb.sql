@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS teamDivAssociations (
 	points_up BIGINT NOT NULL DEFAULT 0,
 	points_down BIGINT NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL,
+	is_private BOOLEAN NOT NULL,
 	CONSTRAINT FK_teamDivAssociation_team FOREIGN KEY (teamid) references teams(id),
 	CONSTRAINT FK_teamDivAssociation_division FOREIGN KEY (divisionid) references divisions(id)
 );
@@ -54,7 +55,7 @@ CREATE TABLE IF NOT EXISTS userTeamAssociation (
 	teamdivid BIGSERIAL NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,
 	ended_at TIMESTAMPTZ,
-	is_leader BOOLEAN NOT NULL,
+	affiliation INT NOT NULL,
 	CONSTRAINT FK_userTeamAssociation_teamdivid FOREIGN KEY (teamdivid) references teamDivAssociations(id),
 	CONSTRAINT FK_userTeamAssociation_user FOREIGN KEY (userid) references users(id)
 );

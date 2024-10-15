@@ -101,10 +101,11 @@ pub struct Team {
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "userTeamAssociation")]
 pub struct UserTeam {
-    pub leagueid: i64,
+    pub teamdivid: i64,
     pub userid: i64,
-    pub teamid: i64,
     pub created_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
+    pub affiliation: i32,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]

@@ -196,6 +196,7 @@ async fn main() -> io::Result<()> {
                 root_user_steamid: config.root_user_steamid.clone(),
             }))
             .service(teams::get_team)
+            .service(teams::get_team_div_assoc)
             .service(teams::post_team)
             .service(users::get_user_from_steamid)
             .service(users::get_user_from_auth_token)

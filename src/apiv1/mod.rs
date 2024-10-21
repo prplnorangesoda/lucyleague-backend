@@ -204,7 +204,7 @@ pub async fn verify_openid_login(
 }
 
 #[derive(Serialize, Deserialize)]
-struct TeamResponse {
+struct TeamDivResponse {
     pub id: i64,
     pub divisionid: i64,
     pub team_name: String,

@@ -43,7 +43,7 @@ pub async fn revoke_user_authorization(client: &Client, user: &User) -> Result<u
 }
 
 pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyError> {
-    let _stmt = "SELECT $table_fields FROM teams WHERE teamid=$1";
+    let _stmt = "SELECT $table_fields FROM teams WHERE id=$1";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -80,14 +80,21 @@ pub async fn get_teamdivassociation_from_id(
 }
 
 pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError> {
-    let _stmt = "INSERT INTO teams(team_tag, team_name, created_at) VALUES($1, $2, $3) RETURNING $table_fields";
+    let _stmt = "INSERT INTO teams(team_tag, team_name, created_at, owner_id)
+    VALUES
+    ($1, $2, $3, $4)
+    RETURNING 
+    $table_fields";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
     let time_now = chrono::offset::Utc::now();
 
     client
-        .query(&stmt, &[&team.team_tag, &team.team_name, &time_now])
+        .query(
+            &stmt,
+            &[&team.team_tag, &team.team_name, &time_now, &team.owner_id],
+        )
         .await?
         .iter()
         .map(|row| Team::from_row_ref(row).unwrap())
@@ -114,7 +121,7 @@ pub async fn get_team_players(
     mass_get_user_from_internal_id(client, &userids).await
 }
 
-async fn get_user_from_internal_id(client: &Client, userid: i64) -> Result<User, MyError> {
+pub async fn get_user_from_internal_id(client: &Client, userid: i64) -> Result<User, MyError> {
     let _stmt = "SELECT $table_fields FROM users WHERE id=$1";
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
@@ -126,7 +133,7 @@ async fn get_user_from_internal_id(client: &Client, userid: i64) -> Result<User,
     Ok(User::from_row_ref(&row).unwrap())
 }
 
-async fn mass_get_user_from_internal_id(
+pub async fn mass_get_user_from_internal_id(
     client: &Client,
     userids: &Vec<i64>,
 ) -> Result<Vec<User>, MyError> {

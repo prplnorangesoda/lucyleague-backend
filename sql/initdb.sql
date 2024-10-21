@@ -34,7 +34,9 @@ CREATE TABLE IF NOT EXISTS teams (
 	id BIGSERIAL PRIMARY KEY,
 	team_tag VARCHAR(6) NOT NULL DEFAULT 'Tag',
 	team_name VARCHAR(200) NOT NULL DEFAULT 'Unnamed',
-	created_at TIMESTAMPTZ NOT NULL
+	owner_id BIGSERIAL NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL,
+	CONSTRAINT FK_teams_owner_id FOREIGN KEY (owner_id) references users(id)
 );
 -- A team can be in multiple leagues at the same time, and have different rosters, while having the same (base) team.
 CREATE TABLE IF NOT EXISTS teamDivAssociations (

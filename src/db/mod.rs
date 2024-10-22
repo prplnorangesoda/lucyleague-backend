@@ -267,13 +267,58 @@ pub async fn register_authorization(
         .ok_or(MyError::NotFound)
 }
 
+pub async fn get_rosters_for_user_id(
+    client: &Client,
+    userid: i64,
+) -> Result<Vec<TeamDivAssociation>, MyError> {
+    let sql_string = "SELECT 
+        $table_fields
+    FROM 
+        userTeamAssociation
+    INNER JOIN 
+        teamDivAssociations 
+    ON 
+        userTeamAssociation.teamdivid = teamDivAssociations.id
+    WHERE
+        userTeamAssociation.userid=$1
+    ";
+    let sql_string = sql_string.replace("$table_fields", &TeamDivAssociation::sql_table_fields());
+    let stmt = client.prepare(&sql_string).await.unwrap();
+
+    let _ = client.query(&stmt, &[&userid]).await?;
+
+    return Ok(Vec::new());
+}
+pub async fn get_ownerships_for_user_id(
+    client: &Client,
+    userid: i64,
+) -> Result<Vec<Team>, MyError> {
+    let sql_string = "SELECT 
+        $table_fields
+    FROM 
+        teams
+    WHERE
+        owner_id=$1
+    ";
+    let sql_string = sql_string.replace("$table_fields", &Team::sql_table_fields());
+    let stmt = client.prepare(&sql_string).await.unwrap();
+
+    let results = client
+        .query(&stmt, &[&userid])
+        .await?
+        .iter()
+        .map(|row| Team::from_row_ref(row).unwrap())
+        .collect();
+    Ok(results)
+}
+
 pub async fn get_users(client: &Client) -> Result<Vec<User>, MyError> {
     let sql_string = include_str!("../../sql/get_users.sql");
     let sql_string = sql_string.replace("$table_fields", &User::sql_table_fields());
-    let sql_string = client.prepare(&sql_string).await.unwrap();
+    let stmt = client.prepare(&sql_string).await.unwrap();
 
     let results = client
-        .query(&sql_string, &[])
+        .query(&stmt, &[])
         .await?
         .iter()
         .map(|row| User::from_row_ref(row).unwrap())

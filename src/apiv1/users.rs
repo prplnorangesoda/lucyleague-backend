@@ -1,6 +1,8 @@
 use crate::db;
 use crate::errors::MyError;
 use crate::models::MiniUser;
+use crate::models::Team;
+use crate::models::TeamDivAssociation;
 use crate::models::User;
 use crate::steamapi;
 use crate::PlayerSummaryAccess;
@@ -12,26 +14,64 @@ use std::num::NonZeroU32;
 
 use crate::AppState;
 
+#[derive(Serialize, Deserialize)]
+struct UserParams {
+    deep: Option<bool>,
+}
+#[derive(Serialize, Deserialize)]
+struct UserResponse {
+    info: User,
+    ownerships: Option<Vec<Team>>,
+    rosters: Option<Vec<TeamDivAssociation>>,
+}
 #[get("/api/v1/user/steamid/{steamid}")]
 pub async fn get_user_from_steamid(
     state: web::Data<AppState>,
     steamid: web::Path<String>,
+    query_params: web::Query<UserParams>,
 ) -> Result<HttpResponse, Error> {
     log::info!("GET request at /api/v1/user/steamid/{steamid}");
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+    let client: Client = crate::grab_pool(&state).await?;
 
-    let user_res = db::get_user_from_steamid(&client, &steamid).await;
-
-    match user_res {
-        Ok(user) => Ok(HttpResponse::Ok().json(user)),
+    let user = match db::get_user_from_steamid(&client, &steamid).await {
+        Ok(user) => user,
         Err(err) => {
             if let MyError::NotFound = err {
-                Ok(HttpResponse::NotFound().body("404 Not Found"))
+                return Ok(HttpResponse::NotFound().body("404 Not Found"));
             } else {
-                Err(err.into())
+                return Err(err.into());
             }
         }
-    }
+    };
+
+    let rosters: Option<Vec<TeamDivAssociation>> = match query_params.deep {
+        Some(deep) => {
+            let mut resp = None;
+            if deep {
+                resp = Some(db::get_rosters_for_user_id(&client, user.id).await?)
+            }
+            resp
+        }
+        None => None,
+    };
+    let ownerships = match query_params.deep {
+        Some(deep) => {
+            let mut resp = None;
+            if deep {
+                resp = Some(db::get_ownerships_for_user_id(&client, user.id).await?)
+            }
+            resp
+        }
+        None => None,
+    };
+
+    let resp = UserResponse {
+        info: user,
+        rosters,
+        ownerships,
+    };
+
+    Ok(HttpResponse::Ok().json(resp))
 }
 
 #[get("/api/v1/user/authtoken/{authtoken}")]
@@ -54,7 +94,7 @@ struct PageRequest {
 }
 
 #[derive(Serialize, Deserialize)]
-struct UserResponse {
+struct PagedUserResponse {
     total_count: i64,
     page: u32,
     amount_per_page: std::num::NonZero<u32>,
@@ -76,7 +116,7 @@ pub async fn get_users_paged(
 
     let joined = futures::future::try_join(total_count, users).await?;
 
-    Ok(HttpResponse::Ok().json(UserResponse {
+    Ok(HttpResponse::Ok().json(PagedUserResponse {
         total_count: joined.0,
         users: joined.1,
         page,

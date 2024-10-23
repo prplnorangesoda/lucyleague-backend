@@ -12,6 +12,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::num::NonZeroU32;
 
+use crate::apiv1::HttpResult;
 use crate::AppState;
 
 #[derive(Serialize, Deserialize)]

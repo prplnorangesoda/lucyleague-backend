@@ -78,13 +78,41 @@ pub async fn get_user_from_steamid(
 pub async fn get_user_from_auth_token(
     state: web::Data<AppState>,
     authtoken: web::Path<String>,
+    query_params: web::Query<UserParams>,
 ) -> Result<HttpResponse, Error> {
     log::info!("GET request at /api/v1/user/authtoken/{authtoken}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
     let user = db::get_user_from_auth_token(&client, &authtoken).await?;
 
-    Ok(HttpResponse::Ok().json(user))
+    let rosters: Option<Vec<TeamDivAssociation>> = match query_params.deep {
+        Some(deep) => {
+            let mut resp = None;
+            if deep {
+                resp = Some(db::get_rosters_for_user_id(&client, user.id).await?)
+            }
+            resp
+        }
+        None => None,
+    };
+    let ownerships = match query_params.deep {
+        Some(deep) => {
+            let mut resp = None;
+            if deep {
+                resp = Some(db::get_ownerships_for_user_id(&client, user.id).await?)
+            }
+            resp
+        }
+        None => None,
+    };
+
+    let resp = UserResponse {
+        info: user,
+        rosters,
+        ownerships,
+    };
+
+    Ok(HttpResponse::Ok().json(resp))
 }
 
 #[derive(Serialize, Deserialize)]

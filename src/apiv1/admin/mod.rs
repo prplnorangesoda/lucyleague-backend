@@ -46,21 +46,22 @@ impl http::header::Header for AuthHeader {
     }
 }
 
-#[post("/api/v1/admin/users")]
-pub async fn add_user(user: web::Json<MiniUser>, state: web::Data<AppState>) -> HttpResult {
-    let user_info = user.into_inner();
-    log::debug!(
-        "creating user with steamid: {0}, username: {1}",
-        &user_info.steamid,
-        &user_info.username
-    );
+// #[post("/api/v1/admin/users")]
+// pub async fn add_user(user: web::Json<MiniUser>, state: web::Data<AppState>) -> HttpResult {
+//     log::info!("POST /api/v1/admin/users");
+//     let user_info = user.into_inner();
+//     log::debug!(
+//         "creating user with steamid: {0}, username: {1}",
+//         &user_info.steamid,
+//         &user_info.username
+//     );
 
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+//     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
-    let new_user = db::add_user(&client, user_info).await?;
+//     let new_user = db::add_user(&client, user_info).await?;
 
-    Ok(HttpResponse::Created().json(new_user))
-}
+//     Ok(HttpResponse::Created().json(new_user))
+// }
 
 #[post("/api/v1/admin/leagues")]
 pub async fn post_league(
@@ -68,7 +69,7 @@ pub async fn post_league(
     state: web::Data<AppState>,
     authorization: web::Header<AuthHeader>,
 ) -> HttpResult {
-    log::debug!("POST /api/v1/leagues");
+    log::info!("POST /api/v1/leagues");
     log::debug!("Authorization header: {0}", authorization.0 .0);
 
     log::trace!("Grabbing pool");
@@ -106,7 +107,7 @@ pub async fn post_league_divisions(
     state: web::Data<AppState>,
     auth: web::Header<AuthHeader>,
 ) -> HttpResult {
-    log::debug!("POST /api/v1/divisions");
+    log::info!("POST /api/v1/divisions");
     log::debug!("Authorization header: {0}", auth.0 .0);
 
     log::trace!("Grabbing pool");

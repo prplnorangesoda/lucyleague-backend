@@ -64,19 +64,39 @@ struct CommandLineArgs {
 async fn main() -> io::Result<()> {
     println!("Making LOGGER");
     simple_logger::SimpleLogger::new()
-        .with_level(log::LevelFilter::Debug)
+        .with_level(log::LevelFilter::Info)
         .env()
         .init()
         .unwrap();
     let args = CommandLineArgs::parse();
 
-    let debug: bool = cfg!(feature = "debug");
+    let debug: bool = cfg!(feature = "debug") || cfg!(debug_assertions);
     log::trace!("Loading .env");
     if !cfg!(feature = "nodotenv") {
-        if cfg!(feature = "debug") {
-            dotenv().expect("Error loading .env file");
+        if debug {
+            match dotenvy::from_filename(".env.development") {
+                Ok(dotenv) => log::info!("Loading .env from {dotenv:?}"),
+                Err(error) => {
+                    log::info!("Error loading .env.development, falling back to .env");
+                    log::debug!("Load error: {error:?}");
+                    match dotenv() {
+                        Ok(dotenv) => log::info!("Loading .env from {dotenv:?}"),
+                        Err(error) => panic!("Error expanding .env: {error:?}"),
+                    }
+                }
+            }
         } else {
-            dotenvy::from_filename(".env.production").expect("Error loading .env.production file");
+            match dotenvy::from_filename(".env.production") {
+                Ok(dotenv) => log::info!("Loading .env from {dotenv:?}"),
+                Err(error) => {
+                    log::info!("Error loading .env.production, falling back to .env");
+                    log::debug!("Load error: {error:?}");
+                    match dotenvy::from_filename(".env") {
+                        Ok(dotenv) => log::info!("Loading .env from {dotenv:?}"),
+                        Err(error) => panic!("Error expanding .env: {error:?}"),
+                    }
+                }
+            };
         }
     }
 
@@ -101,13 +121,12 @@ async fn main() -> io::Result<()> {
 
     let stmt_text = "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users');";
 
-    log::trace!("Testing if users table exists.");
+    log::trace!("Testing if users table exists");
     let client = pool.get().await.unwrap();
     let stmt = client.prepare(stmt_text).await.unwrap();
     let rows = client.query(&stmt, &[]).await.unwrap();
-    let value: bool = rows[0].get(0);
+    let value: bool = rows.get(0).expect("should have one row returned").get(0);
     log::debug!("Return from Postgres: {value}");
-
     if !value {
         let ans = match inquire::Confirm::new(
             "No user table found. Would you like to initialize the database?",
@@ -118,7 +137,10 @@ async fn main() -> io::Result<()> {
             Ok(res) => res,
             Err(err) => {
                 if let InquireError::NotTTY = err {
-                    log::info!("This is not a TTY. Initializing database by default.");
+                    log::info!(
+                        "This is not a TTY. Initializing database by default in 5 seconds..."
+                    );
+                    ::std::thread::sleep(Duration::from_secs(5));
                     true
                 } else {
                     panic!("InquireError: {:?}", err);
@@ -164,7 +186,7 @@ async fn main() -> io::Result<()> {
     }
 
     if debug {
-        log::info!("Using this config to run the server: {config:#?}");
+        log::trace!("Using this config to run the server: {config:#?}");
     }
     log::info!("Cors function: {0}", args.cors);
     let server_address = config.server_addr.clone();
@@ -202,7 +224,7 @@ async fn main() -> io::Result<()> {
             .service(users::get_user_from_auth_token)
             .service(users::get_users_paged)
             .service(users::search_users)
-            .service(admin::add_user)
+            // .service(admin::add_user) // this is unauthenticated...
             .service(leagues::get_league)
             .service(leagues::get_all_leagues)
             .service(admin::post_league)

@@ -16,6 +16,8 @@ use serde::Serialize;
 use crate::apiv1::TeamDivResponse;
 use crate::AppState;
 
+use super::HttpResult;
+
 #[derive(Serialize, Deserialize)]
 struct TeamReturn {
     pub info: Team,
@@ -23,7 +25,8 @@ struct TeamReturn {
     pub team_div_assocs: Vec<TeamDivAssociation>,
 }
 #[get("/api/v1/teams/{team_id}")]
-async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<HttpResponse, Error> {
+async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
+    log::info!("GET /api/v1/teams/{path}");
     let team_id = path.into_inner();
     if team_id < 0 {
         return Err(MyError::NotFound.into());
@@ -45,11 +48,8 @@ async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> Result<Ht
 // this will be retroactively changed to be for a teamDivAssociation and not a root team
 // maybe /rootteam/{team_id}?
 #[get("/api/v1/teamdivassocs/{team_id}")]
-async fn get_team_div_assoc(
-    state: web::Data<AppState>,
-    path: web::Path<i64>,
-) -> Result<HttpResponse, Error> {
-    log::info!("GET request at /api/v1/teams/{path}");
+async fn get_team_div_assoc(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
+    log::info!("GET /api/v1/teams/{path}");
     let team_div_assoc_id = path.into_inner();
     if team_div_assoc_id < 0 {
         return Err(MyError::NotFound.into());
@@ -78,8 +78,8 @@ async fn post_team(
     state: web::Data<AppState>,
     auth_header: web::Header<super::admin::AuthHeader>,
     new_team: web::Json<TeamInfo>,
-) -> Result<HttpResponse, Error> {
-    log::info!("POST request at /api/v1/teams");
+) -> HttpResult {
+    log::info!("POST /api/v1/teams");
     let auth_token = auth_header.into_inner().0;
     let client = state.pool.get().await.map_err(MyError::PoolError)?;
     let user = match get_user_from_auth_token(&client, &auth_token).await {

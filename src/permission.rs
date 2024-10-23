@@ -5,47 +5,32 @@
 //! This should be enough for now, but in future we can use a second permission value.
 use std::ops::BitAnd;
 
+use bitflags::bitflags;
 use num_derive::FromPrimitive;
 use serde::Serialize;
 
 use crate::models::User;
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct UserPermission: i64 {
+        /// Must check for none using ==.
+        const None = 0;
+        /// All permissions.
+        const Admin = 1 << 0;
+        /// Can set permissions for others.
+        const SetPermissions = 1 << 1;
+        /// Can create a new League, and modify existing ones.
+        const CreateLeague = 1 << 2;
+        /// Can create a new Game between two teams for an existing League.
+        const CreateGame = 1 << 3;
+        /// Can create new Teams and manage existing ones.
+        const CreateTeam = 1 << 4;
+        // # Premade Permissions
+        // Some example premade permission shorthands in order to check multiple permissions at once,
+        // or to quickly set a user's permission without specifying each line manually.
 
-#[derive(Clone, Copy, FromPrimitive)]
-pub enum UserPermission {
-    /// Must check for none using ==.
-    None = 0,
-    /// All permissions.
-    Admin = 1 << 0,
-    /// Can set permissions for others.
-    SetPermissions = 1 << 1,
-    /// Can create a new League, and modify existing ones.
-    CreateLeague = 1 << 2,
-    /// Can create a new Game between two teams for an existing League.
-    CreateGame = 1 << 3,
-    /// Can create new Teams and manage existing ones.
-    CreateTeam = 1 << 4,
-}
-
-impl BitAnd for UserPermission {
-    type Output = i64;
-    fn bitand(self, rhs: Self) -> Self::Output {
-        self as i64 & rhs as i64
-    }
-}
-
-impl BitAnd<i64> for UserPermission {
-    type Output = i64;
-    fn bitand(self, rhs: i64) -> Self::Output {
-        self as i64 & rhs
-    }
-}
-
-impl Serialize for UserPermission {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_u64(*self as u64)
+        /// Permissions to create leagues and games
+        const LeagueAdmin = Self::CreateLeague.bits() | Self::CreateGame.bits();
     }
 }
 
@@ -57,21 +42,12 @@ impl User {
     }
     /// Perform bitwise AND operation on the permission bitfield to see if it contains `permission`.
     pub fn check_has_permission(&self, permission: UserPermission) -> bool {
-        permission & self.permissions != 0
+        permission.bits() & self.permissions != 0
     }
     pub fn add_permission(&mut self, permission: UserPermission) {
         if self.check_has_permission(permission) {
             return;
         }
-        self.permissions += permission as i64;
+        self.permissions += permission.bits();
     }
-}
-
-/// # Premade Permissions
-/// Some example premade permission shorthands in order to check multiple permissions at once,
-/// or to quickly set a user's permission without specifying each line manually.
-pub mod premade_permissions {
-    use crate::permission::UserPermission;
-    pub static LEAGUE_ADMIN: i64 =
-        (UserPermission::CreateLeague as i64) + (UserPermission::CreateGame as i64);
 }

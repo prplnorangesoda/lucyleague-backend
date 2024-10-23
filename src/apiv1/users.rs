@@ -29,7 +29,7 @@ pub async fn get_user_from_steamid(
     state: web::Data<AppState>,
     steamid: web::Path<String>,
     query_params: web::Query<UserParams>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     log::info!("GET request at /api/v1/user/steamid/{steamid}");
     let client: Client = crate::grab_pool(&state).await?;
 
@@ -79,7 +79,7 @@ pub async fn get_user_from_auth_token(
     state: web::Data<AppState>,
     authtoken: web::Path<String>,
     query_params: web::Query<UserParams>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     log::info!("GET request at /api/v1/user/authtoken/{authtoken}");
     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
@@ -132,7 +132,7 @@ struct PagedUserResponse {
 pub async fn get_users_paged(
     state: web::Data<AppState>,
     query: web::Query<PageRequest>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     let client = state.pool.get().await.unwrap();
     let amount = query
         .amount_per_page
@@ -163,7 +163,7 @@ struct SearchQuery {
 pub async fn search_users(
     state: web::Data<AppState>,
     query: web::Query<SearchQuery>,
-) -> Result<HttpResponse, Error> {
+) -> HttpResult {
     let client = state.pool.get().await.unwrap();
     let amount = query
         .amount_per_page

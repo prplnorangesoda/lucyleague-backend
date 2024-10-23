@@ -19,6 +19,7 @@ use serde::Serialize;
 
 use std::collections::HashMap;
 
+pub mod add_teams;
 pub mod admin;
 pub mod leagues;
 pub mod login;
@@ -28,6 +29,8 @@ pub mod users;
 mod apimodels;
 
 use apimodels::*;
+
+type HttpResult = Result<HttpResponse, Error>;
 
 /*
 https://rgl.gg/Login/Default.aspx?push=1&r=40
@@ -55,10 +58,8 @@ struct LogoutFields {
 }
 
 #[post("/api/v1/logout")]
-pub async fn logout(
-    body: web::Json<LogoutFields>,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
+pub async fn logout(body: web::Json<LogoutFields>, state: web::Data<AppState>) -> HttpResult {
+    log::info!("POST /api/v1/logout");
     let client = grab_pool(&state).await?;
     let user = match db::get_user_from_auth_token(&client, &body.auth_token).await {
         Ok(user) => user,
@@ -132,7 +133,7 @@ pub async fn verify_openid_login(
     body: web::Json<OpenIdFields>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
-    log::info!("POST at /api/v1/loginverify");
+    log::info!("POST /api/v1/loginverify");
     let encode = serde_json::to_string(&body.0).unwrap();
     let is_valid = match steamapi::verify_auth_underscores(&encode).await {
         Ok(is_valid) => is_valid,

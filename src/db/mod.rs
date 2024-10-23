@@ -348,7 +348,7 @@ pub async fn set_user_permissions(
 }
 
 pub async fn set_super_user(client: &Client, user: &User) -> Result<User, MyError> {
-    set_user_permissions(client, user, UserPermission::Admin as i64).await
+    set_user_permissions(client, user, UserPermission::Admin.bits()).await
 }
 
 pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyError> {

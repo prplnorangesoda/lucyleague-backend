@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS games (
 CREATE TABLE IF NOT EXISTS authorizations (
 	id BIGSERIAL PRIMARY KEY,
 	userid BIGSERIAL NOT NULL,
-	token VARCHAR(50) NOT NULL,
+	token TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,
 	expires TIMESTAMPTZ NOT NULL,
 	CONSTRAINT FK_authorization_user FOREIGN KEY (userid) references users(id)

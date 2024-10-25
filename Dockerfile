@@ -31,6 +31,7 @@ RUN cargo build
 # Copy environment variables
 COPY .env ./.env
 COPY .env.production ./.env.production
+COPY .env.development ./.env.development
 EXPOSE 8080
 
 CMD ["./target/debug/lucyleague"]

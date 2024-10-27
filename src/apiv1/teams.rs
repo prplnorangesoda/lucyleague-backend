@@ -13,7 +13,7 @@ use deadpool_postgres::{Client, Pool};
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::apiv1::TeamDivResponse;
+use crate::apiv1::DeepTeamDivResponse;
 use crate::AppState;
 
 use super::HttpResult;
@@ -49,21 +49,28 @@ async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResul
 // maybe /rootteam/{team_id}?
 #[get("/api/v1/teamdivassocs/{team_id}")]
 async fn get_team_div_assoc(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
-    log::info!("GET /api/v1/teams/{path}");
+    log::info!("GET /api/v1/teamdivassocs/{path}");
     let team_div_assoc_id = path.into_inner();
     if team_div_assoc_id < 0 {
         return Err(MyError::NotFound.into());
     }
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
+    log::debug!("Grabbing pool");
+    let client = grab_pool(&state).await?;
+    log::debug!("Getting teamdivassociation");
     let team_div_assoc: TeamDivAssociation =
         db::get_teamdivassociation_from_id(&client, team_div_assoc_id).await?;
-    let team = db::get_team_from_id(&client, team_div_assoc.teamid).await?;
+    log::debug!("Getting team");
 
-    let players = db::get_team_players(&client, &team_div_assoc).await?;
-    let resp = TeamDivResponse {
-        id: team.id,
-        divisionid: team_div_assoc.divisionid,
-        team_name: team.team_name,
+    let team = db::get_team_from_id(&client, team_div_assoc.teamid)
+        .await
+        .expect("should be able to get team from id");
+
+    let players = db::get_team_players(&client, &team_div_assoc)
+        .await
+        .expect("should be able to get team players");
+    let resp = DeepTeamDivResponse {
+        association_info: team_div_assoc,
+        team_info: team,
         players,
     };
     Ok(HttpResponse::Ok().json(resp))
@@ -94,15 +101,6 @@ async fn post_team(
         }
     };
     let team = new_team.into_inner();
-    // let leagueid = team.leagueid;
-    // let league = match db::leagues::get_league_from_id(&client, leagueid).await {
-    //     Ok(league) => league,
-    //     Err(_) => return Ok(HttpResponse::NotFound().body("League not found with id ${leagueid}")),
-    // };
-
-    // if !user.admin_or_perm(UserPermission::CreateTeam) && !league.accepting_teams {
-    //     return Ok(HttpResponse::BadRequest().body("League not accepting new teams"));
-    // }
 
     let team = db::add_team(
         &client,

@@ -75,8 +75,12 @@ pub async fn get_league(state: web::Data<AppState>, league_id: web::Path<i64>) -
 
     let mut divisions: Vec<DivisionOptionalTeams> = Vec::with_capacity(league_divs.len());
     for div in league_divs {
-        let admins = db::divisions::get_admins_for_div_id_wrapped(&client, div.id).await?;
-        let teams = db::divisions::get_teams_for_div_id(&client, div.id).await?;
+        let admins = db::divisions::get_admins_for_div_id_wrapped(&client, div.id)
+            .await
+            .expect("should be able to get admins");
+        let teams = db::divisions::get_teams_for_div_id(&client, div.id)
+            .await
+            .expect("should be able to get teams");
         divisions.push(DivisionOptionalTeams {
             info: div,
             admins,

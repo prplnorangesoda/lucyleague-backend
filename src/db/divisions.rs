@@ -106,7 +106,7 @@ pub async fn get_teams_for_div_id(
     let mut ret: Vec<DeepTeamDivAssociation> = Vec::with_capacity(assocs.len());
 
     for assoc in assocs.into_iter() {
-        let row = client.query_one(&stmt, &[&assoc.id]).await?;
+        let row = client.query_one(&stmt, &[&assoc.teamid]).await?;
         ret.push(DeepTeamDivAssociation {
             team_info: Team::from_row(row).unwrap(),
             association_info: assoc,

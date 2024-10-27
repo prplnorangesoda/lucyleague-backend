@@ -103,6 +103,7 @@ pub struct Team {
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "userTeamAssociation")]
 pub struct UserTeam {
+    pub id: i64,
     pub teamdivid: i64,
     pub userid: i64,
     pub created_at: DateTime<Utc>,

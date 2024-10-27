@@ -7,6 +7,8 @@ use crate::db;
 use crate::errors::MyError;
 use crate::models::League;
 use crate::models::MiniTeam;
+use crate::models::Team;
+use crate::models::TeamDivAssociation;
 use crate::models::User;
 use crate::steamapi;
 use crate::CurrentHost;
@@ -205,9 +207,8 @@ pub async fn verify_openid_login(
 }
 
 #[derive(Serialize, Deserialize)]
-struct TeamDivResponse {
-    pub id: i64,
-    pub divisionid: i64,
-    pub team_name: String,
+struct DeepTeamDivResponse {
+    pub team_info: Team,
+    pub association_info: TeamDivAssociation,
     pub players: Vec<User>,
 }

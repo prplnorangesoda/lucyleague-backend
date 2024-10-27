@@ -220,6 +220,7 @@ async fn main() -> io::Result<()> {
             .service(teams::get_team)
             .service(teams::get_team_div_assoc)
             .service(teams::post_team)
+            .service(add_teams::post_team_to_league)
             .service(users::get_user_from_steamid)
             .service(users::get_user_from_auth_token)
             .service(users::get_users_paged)

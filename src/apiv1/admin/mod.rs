@@ -132,17 +132,17 @@ pub async fn post_league_divisions(
 
     Ok(HttpResponse::Created().json(response))
 }
-/// Set a user or multiple users to a team.
-#[post("/api/v1/admin/setuserteam")]
-pub async fn post_users_team(
-    user_team: web::Json<UserTeamBody>,
-    state: web::Data<AppState>,
-) -> HttpResult {
-    log::debug!("POST /api/v1/users/setteam");
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
-    let user_team = user_team.into_inner();
-    // fetch the team to get its id
-    let team = db::get_team_from_id(&client, user_team.team_id).await?;
-    todo!();
-    Ok(HttpResponse::Ok().finish())
-}
+// /// Set a user or multiple users to a team.
+// #[post("/api/v1/admin/setuserteam")]
+// pub async fn post_users_team(
+//     user_team: web::Json<UserTeamBody>,
+//     state: web::Data<AppState>,
+// ) -> HttpResult {
+//     log::debug!("POST /api/v1/users/setteam");
+//     let client = state.pool.get().await.map_err(MyError::PoolError)?;
+//     let user_team = user_team.into_inner();
+//     // fetch the team to get its id
+//     let team = db::get_team_from_id(&client, user_team.team_id).await?;
+//     todo!();
+//     Ok(HttpResponse::Ok().finish())
+// }

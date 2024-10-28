@@ -1,6 +1,8 @@
 // Code that acts as a wrapper for database values.
 use chrono::{DateTime, Utc};
 use deadpool_postgres::Client;
+use divisions::DeepTeamDivAssociation;
+use serde::{Deserialize, Serialize};
 use tokio_pg_mapper::FromTokioPostgresRow;
 
 use crate::{
@@ -104,23 +106,42 @@ pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError>
         .ok_or(MyError::NotFound)
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct UserAndAssoc {
+    pub user: User,
+    pub assoc: UserTeam,
+}
+
 pub async fn get_team_players(
     client: &Client,
     team: &TeamDivAssociation,
-) -> Result<Vec<User>, MyError> {
+) -> Result<Vec<UserAndAssoc>, MyError> {
     let _stmt = "SELECT $table_fields FROM userTeamAssociation WHERE teamdivid=$1";
     let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
-    let userids: Vec<i64> = client
+    let userassocs: Vec<UserTeam> = client
         .query(&stmt, &[&team.id])
         .await?
         .iter()
-        .map(|row| UserTeam::from_row_ref(row).unwrap().userid)
+        .map(|row| UserTeam::from_row_ref(row).unwrap())
         .collect();
-    log::debug!("{userids:?}");
 
-    mass_get_user_from_internal_id(client, &userids).await
+    let userids: Vec<i64> = (&userassocs).iter().map(|item| item.userid).collect();
+    let users = mass_get_user_from_internal_id(client, &userids).await?;
+
+    let mut out: Vec<UserAndAssoc> = Vec::with_capacity(users.len());
+
+    let mut assoc_iter = userassocs.into_iter();
+    for user in users {
+        out.push(UserAndAssoc {
+            user,
+            assoc: assoc_iter
+                .next()
+                .expect("there should not be more users than associations"),
+        })
+    }
+    Ok(out)
 }
 
 pub async fn get_user_from_internal_id(client: &Client, userid: i64) -> Result<User, MyError> {
@@ -269,27 +290,45 @@ pub async fn register_authorization(
         .ok_or(MyError::NotFound)
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SuperDeepTeamDivAssociation {
+    pub user: UserTeam,
+    pub team: DeepTeamDivAssociation,
+}
 pub async fn get_rosters_for_user_id(
     client: &Client,
     userid: i64,
-) -> Result<Vec<TeamDivAssociation>, MyError> {
+) -> Result<Vec<SuperDeepTeamDivAssociation>, MyError> {
     let sql_string = "SELECT 
-        $table_fields
-    FROM 
-        userTeamAssociation
-    INNER JOIN 
-        teamDivAssociations 
-    ON 
-        userTeamAssociation.teamdivid = teamDivAssociations.id
-    WHERE
-        userTeamAssociation.userid=$1
+        $tda, $t, $u
+        FROM userTeamAssociation
+            INNER JOIN teamDivAssociations 
+                ON userTeamAssociation.teamdivid = teamDivAssociations.id
+            INNER JOIN teams
+                ON teamDivAssociations.teamid = teams.id
+        WHERE userTeamAssociation.userid=$1
     ";
-    let sql_string = sql_string.replace("$table_fields", &TeamDivAssociation::sql_table_fields());
+    let sql_string = sql_string
+        .replace("$tda", &TeamDivAssociation::sql_table_fields())
+        .replace("$t", &Team::sql_table_fields())
+        .replace("$u", &UserTeam::sql_table_fields());
     let stmt = client.prepare(&sql_string).await.unwrap();
 
-    let _ = client.query(&stmt, &[&userid]).await?;
+    let rows = client.query(&stmt, &[&userid]).await?;
 
-    return Ok(Vec::new());
+    let mut resp: Vec<SuperDeepTeamDivAssociation> = Vec::with_capacity(rows.len());
+
+    for row in rows.into_iter() {
+        resp.push(SuperDeepTeamDivAssociation {
+            user: UserTeam::from_row_ref(&row).unwrap(),
+            team: DeepTeamDivAssociation {
+                association_info: TeamDivAssociation::from_row_ref(&row).unwrap(),
+                team_info: Team::from_row_ref(&row).unwrap(),
+            },
+        })
+    }
+
+    Ok(resp)
 }
 pub async fn get_ownerships_for_user_id(
     client: &Client,

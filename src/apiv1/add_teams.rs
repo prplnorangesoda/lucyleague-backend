@@ -76,6 +76,16 @@ pub async fn post_team_to_league(
         }
     };
 
+    for roster in db::get_rosters_for_user_id(&client, user.id)
+        .await?
+        .into_iter()
+    {
+        if roster.team.association_info.divisionid == div.id {
+            return Ok(HttpResponse::BadRequest()
+                .body("You are currently signed up to a team in this league"));
+        }
+    }
+
     let final_assoc = MiniTeamDivAssociation {
         divisionid: div.id,
         teamid: team.id,
@@ -94,5 +104,5 @@ pub async fn post_team_to_league(
     .await
     .expect("should be able to add user team id");
 
-    Ok(HttpResponse::Ok().json(assoc))
+    Ok(HttpResponse::Created().json(assoc))
 }

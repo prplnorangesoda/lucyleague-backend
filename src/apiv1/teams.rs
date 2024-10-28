@@ -35,12 +35,14 @@ async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResul
     let client = grab_pool(&state).await?;
 
     let team = db::get_team_from_id(&client, team_id).await?;
-    let owner = db::get_user_from_internal_id(&client, team.owner_id).await?;
-
+    let (owner, team_div_assocs) = futures::try_join!(
+        db::get_user_from_internal_id(&client, team.owner_id),
+        db::team_div_assocs::get_team_tdas_teamid(&client, team_id)
+    )?;
     let resp = TeamReturn {
         info: team,
         owner,
-        team_div_assocs: Vec::new(),
+        team_div_assocs,
     };
 
     Ok(HttpResponse::Ok().json(resp))
@@ -68,10 +70,23 @@ async fn get_team_div_assoc(state: web::Data<AppState>, path: web::Path<i64>) ->
     let players = db::get_team_players(&client, &team_div_assoc)
         .await
         .expect("should be able to get team players");
+
+    let mut current_players = Vec::with_capacity(players.len());
+    let mut past_players = Vec::with_capacity(players.len());
+
+    for player in players.into_iter() {
+        if player.assoc.ended_at.is_some() {
+            past_players.push(player)
+        } else {
+            current_players.push(player)
+        }
+    }
+
     let resp = DeepTeamDivResponse {
         association_info: team_div_assoc,
         team_info: team,
-        players,
+        current_players,
+        past_players,
     };
     Ok(HttpResponse::Ok().json(resp))
 }

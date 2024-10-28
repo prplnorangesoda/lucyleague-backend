@@ -13,6 +13,27 @@ use crate::{
     permission::UserPermission,
 };
 
+pub async fn get_team_tdas_teamid(
+    client: &Client,
+    teamid: i64,
+) -> Result<Vec<TeamDivAssociation>, MyError> {
+    let sql_string = "SELECT $tda_f \
+        FROM teamDivAssociations \
+        WHERE teamid=$1"
+        .replace("$tda_f", &TeamDivAssociation::sql_table_fields());
+
+    let stmt = client.prepare(&sql_string).await?;
+
+    let rows = client
+        .query(&stmt, &[&teamid])
+        .await?
+        .iter()
+        .map(TeamDivAssociation::from_row_ref)
+        .map(Result::unwrap)
+        .collect();
+
+    Ok(rows)
+}
 pub async fn get_team_div_assoc_from_id(
     client: &Client,
     id: i64,

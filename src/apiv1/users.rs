@@ -1,4 +1,6 @@
 use crate::db;
+use crate::db::divisions::DeepTeamDivAssociation;
+use crate::db::SuperDeepTeamDivAssociation;
 use crate::errors::MyError;
 use crate::models::MiniUser;
 use crate::models::Team;
@@ -23,7 +25,7 @@ struct UserParams {
 struct UserResponse {
     info: User,
     ownerships: Option<Vec<Team>>,
-    rosters: Option<Vec<TeamDivAssociation>>,
+    rosters: Option<Vec<SuperDeepTeamDivAssociation>>,
 }
 #[get("/api/v1/user/steamid/{steamid}")]
 pub async fn get_user_from_steamid(
@@ -45,7 +47,7 @@ pub async fn get_user_from_steamid(
         }
     };
 
-    let rosters: Option<Vec<TeamDivAssociation>> = match query_params.deep {
+    let rosters: Option<Vec<SuperDeepTeamDivAssociation>> = match query_params.deep {
         Some(deep) => {
             let mut resp = None;
             if deep {
@@ -86,7 +88,7 @@ pub async fn get_user_from_auth_token(
 
     let user = db::get_user_from_auth_token(&client, &authtoken).await?;
 
-    let rosters: Option<Vec<TeamDivAssociation>> = match query_params.deep {
+    let rosters: Option<Vec<SuperDeepTeamDivAssociation>> = match query_params.deep {
         Some(deep) => {
             let mut resp = None;
             if deep {

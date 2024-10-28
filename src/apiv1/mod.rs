@@ -4,6 +4,7 @@
 use crate::authorization;
 use crate::authorization::get_authorization_for_user;
 use crate::db;
+use crate::db::UserAndAssoc;
 use crate::errors::MyError;
 use crate::models::League;
 use crate::models::MiniTeam;
@@ -210,5 +211,6 @@ pub async fn verify_openid_login(
 struct DeepTeamDivResponse {
     pub team_info: Team,
     pub association_info: TeamDivAssociation,
-    pub players: Vec<User>,
+    pub current_players: Vec<UserAndAssoc>,
+    pub past_players: Vec<UserAndAssoc>,
 }

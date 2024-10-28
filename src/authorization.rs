@@ -18,7 +18,7 @@ pub async fn create_authorization_for_user(
     dbclient: &Client,
     user: &User,
 ) -> Result<Authorization, MyError> {
-    let token = Randomizer::ALPHANUMERIC(40).string().unwrap();
+    let token = Randomizer::ALPHANUMERIC(100).string().unwrap();
 
     let time_now = chrono::offset::Utc::now();
 

@@ -18,7 +18,7 @@ RUN cargo install cargo-build-dependencies
 # Copy our manifests
 COPY Cargo.toml Cargo.lock ./
 
-RUN cargo build-dependencies --release
+RUN cargo build-dependencies
 
 # Copy our source files
 RUN mkdir backend-src
@@ -26,11 +26,12 @@ COPY src ./src
 COPY sql ./sql
 
 # Build our source over our dependencies
-RUN cargo build --release
+RUN cargo build
 
 # Copy environment variables
 COPY .env ./.env
 COPY .env.production ./.env.production
+COPY .env.development ./.env.development
 EXPOSE 8080
 
-CMD ["./target/release/lucyleague"]
+CMD ["./target/debug/lucyleague"]

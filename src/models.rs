@@ -85,7 +85,7 @@ pub struct League {
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
 #[pg_mapper(table = "teams")]
 pub struct MiniTeam {
-    pub leagueid: i64,
+    pub owner_id: i64,
     pub team_name: String,
     pub team_tag: String,
 }
@@ -94,18 +94,21 @@ pub struct MiniTeam {
 #[pg_mapper(table = "teams")]
 pub struct Team {
     pub id: i64,
+    pub owner_id: i64,
     pub team_name: String,
     pub team_tag: String,
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "userTeam")]
+#[derive(Debug, Deserialize, PostgresMapper, Serialize, Clone)]
+#[pg_mapper(table = "userTeamAssociation")]
 pub struct UserTeam {
-    pub leagueid: i64,
+    pub id: i64,
+    pub teamdivid: i64,
     pub userid: i64,
-    pub teamid: i64,
     pub created_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
+    pub affiliation: i32,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
@@ -118,6 +121,7 @@ pub struct TeamDivAssociation {
     pub points_up: i64,
     pub points_down: i64,
     pub created_at: DateTime<Utc>,
+    pub is_private: bool,
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]

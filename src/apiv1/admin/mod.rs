@@ -5,6 +5,7 @@ use actix_web::http::header;
 use actix_web::{http, post, web, Error, HttpResponse};
 use derive_more::derive::{Debug, Display};
 
+use super::HttpResult;
 use crate::apiv1::apimodels::*;
 use crate::db;
 use crate::errors::MyError;
@@ -14,7 +15,7 @@ use crate::AppState;
 use deadpool_postgres::Client;
 
 #[derive(Debug, Display)]
-struct AuthHeader(String);
+pub struct AuthHeader(pub String);
 
 impl TryIntoHeaderValue for AuthHeader {
     type Error = actix_web::error::HttpError;
@@ -45,32 +46,30 @@ impl http::header::Header for AuthHeader {
     }
 }
 
-#[post("/api/v1/admin/users")]
-pub async fn add_user(
-    user: web::Json<MiniUser>,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
-    let user_info = user.into_inner();
-    log::debug!(
-        "creating user with steamid: {0}, username: {1}",
-        &user_info.steamid,
-        &user_info.username
-    );
+// #[post("/api/v1/admin/users")]
+// pub async fn add_user(user: web::Json<MiniUser>, state: web::Data<AppState>) -> HttpResult {
+//     log::info!("POST /api/v1/admin/users");
+//     let user_info = user.into_inner();
+//     log::debug!(
+//         "creating user with steamid: {0}, username: {1}",
+//         &user_info.steamid,
+//         &user_info.username
+//     );
 
-    let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
+//     let client: Client = state.pool.get().await.map_err(MyError::PoolError)?;
 
-    let new_user = db::add_user(&client, user_info).await?;
+//     let new_user = db::add_user(&client, user_info).await?;
 
-    Ok(HttpResponse::Created().json(new_user))
-}
+//     Ok(HttpResponse::Created().json(new_user))
+// }
 
 #[post("/api/v1/admin/leagues")]
 pub async fn post_league(
     league: web::Json<MiniLeague>,
     state: web::Data<AppState>,
     authorization: web::Header<AuthHeader>,
-) -> Result<HttpResponse, Error> {
-    log::debug!("POST request at /api/v1/leagues");
+) -> HttpResult {
+    log::info!("POST /api/v1/leagues");
     log::debug!("Authorization header: {0}", authorization.0 .0);
 
     log::trace!("Grabbing pool");
@@ -107,8 +106,8 @@ pub async fn post_league_divisions(
     division: web::Json<MiniDivision>,
     state: web::Data<AppState>,
     auth: web::Header<AuthHeader>,
-) -> Result<HttpResponse, Error> {
-    log::debug!("POST request at /api/v1/divisions");
+) -> HttpResult {
+    log::info!("POST /api/v1/divisions");
     log::debug!("Authorization header: {0}", auth.0 .0);
 
     log::trace!("Grabbing pool");
@@ -133,17 +132,17 @@ pub async fn post_league_divisions(
 
     Ok(HttpResponse::Created().json(response))
 }
-/// Set a user or multiple users to a team.
-#[post("/api/v1/admin/setuserteam")]
-pub async fn post_users_team(
-    user_team: web::Json<UserTeamBody>,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
-    log::debug!("POST request at /api/v1/users/setteam");
-    let client = state.pool.get().await.map_err(MyError::PoolError)?;
-    let user_team = user_team.into_inner();
-    // fetch the team to get its id
-    let team = db::get_team_from_id(&client, user_team.team_id).await?;
-    todo!();
-    Ok(HttpResponse::Ok().finish())
-}
+// /// Set a user or multiple users to a team.
+// #[post("/api/v1/admin/setuserteam")]
+// pub async fn post_users_team(
+//     user_team: web::Json<UserTeamBody>,
+//     state: web::Data<AppState>,
+// ) -> HttpResult {
+//     log::debug!("POST /api/v1/users/setteam");
+//     let client = state.pool.get().await.map_err(MyError::PoolError)?;
+//     let user_team = user_team.into_inner();
+//     // fetch the team to get its id
+//     let team = db::get_team_from_id(&client, user_team.team_id).await?;
+//     todo!();
+//     Ok(HttpResponse::Ok().finish())
+// }

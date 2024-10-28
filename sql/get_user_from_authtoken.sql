@@ -1,1 +1,3 @@
-SELECT * FROM authorizations WHERE token=$1;
+SELECT *
+FROM authorizations
+WHERE token = $1;

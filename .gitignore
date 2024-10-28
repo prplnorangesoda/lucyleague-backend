@@ -3,6 +3,7 @@
 hide.txt
 .env
 .env.production
+.env.development
 static/
 target/
 

@@ -202,9 +202,9 @@ async fn main() -> io::Result<()> {
     };
 
     let workers: usize = if debug {
-        1
+        4
     } else {
-        std::thread::available_parallelism().unwrap().into()
+        std::thread::available_parallelism()?.into()
     };
     let backend = InMemoryBackend::builder().build();
     let server = HttpServer::new(move || {

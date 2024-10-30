@@ -6,13 +6,14 @@ use crate::models::{League, MiniTeam, Team, TeamDivAssociation, User};
 use crate::permission::UserPermission;
 use crate::steamapi;
 use crate::CurrentHost;
-use actix_web::{get, post, web, Error, HttpResponse};
+use actix_web::{delete, get, post, web, Error, HttpResponse};
 use chrono::DateTime;
 use chrono::Utc;
 use deadpool_postgres::{Client, Pool};
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::admin::AuthHeader;
 use crate::apiv1::DeepTeamDivResponse;
 use crate::AppState;
 
@@ -25,7 +26,7 @@ struct TeamReturn {
     pub team_div_assocs: Vec<TeamDivAssociation>,
 }
 #[get("/api/v1/teams/{team_id}")]
-async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
+pub async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
     log::info!("GET /api/v1/teams/{path}");
     let team_id = path.into_inner();
     if team_id < 0 {
@@ -47,10 +48,18 @@ async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResul
 
     Ok(HttpResponse::Ok().json(resp))
 }
-// this will be retroactively changed to be for a teamDivAssociation and not a root team
-// maybe /rootteam/{team_id}?
+
+#[delete("/api/v1/teamdivassocs/{team_id}")]
+pub async fn del_tda(
+    state: web::Data<AppState>,
+    path: web::Path<i64>,
+    auth_header: web::Header<AuthHeader>,
+) -> HttpResult {
+    Ok(HttpResponse::Ok().body("example"))
+}
+
 #[get("/api/v1/teamdivassocs/{team_id}")]
-async fn get_team_div_assoc(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
+pub async fn get_team_div_assoc(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
     log::info!("GET /api/v1/teamdivassocs/{path}");
     let team_div_assoc_id = path.into_inner();
     if team_div_assoc_id < 0 {
@@ -96,7 +105,7 @@ struct TeamInfo {
     pub team_tag: String,
 }
 #[post("/api/v1/teams")]
-async fn post_team(
+pub async fn post_team(
     state: web::Data<AppState>,
     auth_header: web::Header<super::admin::AuthHeader>,
     new_team: web::Json<TeamInfo>,

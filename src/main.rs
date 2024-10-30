@@ -21,6 +21,10 @@ Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
 // Main execution and routes.
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
+use actix_extensible_rate_limit::{
+    backend::{memory::InMemoryBackend, SimpleInputFunctionBuilder},
+    RateLimiter,
+};
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
 use confik::{Configuration as _, EnvSource};
@@ -70,6 +74,7 @@ async fn main() -> io::Result<()> {
         .unwrap();
     let args = CommandLineArgs::parse();
 
+    log::debug!("example");
     let debug: bool = cfg!(feature = "debug") || cfg!(debug_assertions);
     log::trace!("Loading .env");
     if !cfg!(feature = "nodotenv") {
@@ -197,16 +202,24 @@ async fn main() -> io::Result<()> {
     };
 
     let workers: usize = if debug {
-        2
+        1
     } else {
         std::thread::available_parallelism().unwrap().into()
     };
-
+    let backend = InMemoryBackend::builder().build();
     let server = HttpServer::new(move || {
         let cors = cors();
+        // assign a rate limit, 30 per
+        let input = SimpleInputFunctionBuilder::new(Duration::from_secs(60), 30)
+            .real_ip_key()
+            .build();
+        let middleware = RateLimiter::builder(backend.clone(), input)
+            .add_headers()
+            .build();
         log::trace!("Inside the HttpServer closure");
         App::new()
             .wrap(cors)
+            .wrap(middleware)
             .app_data(web::Data::new(AppState {
                 current_host: CurrentHost {
                     address: server_address.clone(),

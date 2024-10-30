@@ -9,6 +9,21 @@ services:
       db:
         condition: service_healthy
 
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
+          target: /app/target
+        - action: sync+restart
+          path: .env
+          target: /app/.env
+        - action: sync+restart
+          path: .env.development
+          target: /app/.env.development
+        - action: sync+restart
+          path: .env.production
+          target: /app/.env.production
+
   db:
     attach: true
     image: postgres
@@ -27,7 +42,6 @@ services:
       retries: 10
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./sql/initdb.sql:/docker-entrypoint
 
 volumes:
   db_data:

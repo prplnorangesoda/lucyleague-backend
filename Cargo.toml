@@ -3,9 +3,6 @@ name = "lucyleague"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "lucyleague"
-
 [dependencies]
 actix-web = "4"
 actix-cors = "0.7"
@@ -39,6 +36,7 @@ simple_logger = "5"
 clap = { version = "4.5.17", features = ["derive"] }
 futures = "0.3.30"
 bitflags = "2.6.0"
+actix-extensible-rate-limit = "0.4.0"
 
 [features]
 debug = []

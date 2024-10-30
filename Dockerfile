@@ -1,9 +1,12 @@
 # Rust as the base image (MSRV: 1.79)
 FROM rust:1.79 AS rust-builder
 #RUN cargo install cargo-build-dependencies
-RUN cd / && USER=root cargo new --bin lucyleague
-WORKDIR /lucyleague
+RUN useradd -ms /bin/sh -u 1001 app
+USER app
 
+WORKDIR /app
+
+RUN cargo init
 
 # # If you'd like to just copy over your pre-built files to a cloud server somewhere, uncomment below.
 # COPY ./target/release/lucyleague lucyleague
@@ -16,14 +19,14 @@ WORKDIR /lucyleague
 RUN cargo install cargo-build-dependencies
 
 # Copy our manifests
-COPY Cargo.toml Cargo.lock ./
+COPY --chown=app:app Cargo.toml Cargo.lock ./
 
 RUN cargo build-dependencies
 
 # Copy our source files
 RUN mkdir backend-src
-COPY src ./src
-COPY sql ./sql
+COPY --chown=app:app src ./src
+COPY --chown=app:app sql ./sql
 
 # Build our source over our dependencies
 RUN cargo build

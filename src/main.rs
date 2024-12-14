@@ -58,7 +58,7 @@ struct CurrentHost {
 struct CommandLineArgs {
     /// The level of CORS protection to add.
     ///
-    /// Allowed values: `permissive`, `default`  
+    /// Allowed values: `permissive`, `default`
     /// Note: currently there is no difference.
     #[arg(short, long, default_value_t = String::from("default"))]
     cors: String,

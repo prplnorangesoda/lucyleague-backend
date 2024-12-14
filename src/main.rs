@@ -160,7 +160,7 @@ async fn main() -> io::Result<()> {
 
     log::debug!("Checking if users table has any entries");
     let test_users = "SELECT EXISTS (SELECT * FROM users);";
-    log::trace!("Preparing query SELECT EXISTS FROM USERS");
+    log::trace!("Preparing query SELECT EXISTS (SELECT * FROM users);");
     let test_users = client.prepare(test_users).await.unwrap();
     log::trace!("Querying");
     let rows = client.query(&test_users, &[]).await.unwrap();
@@ -202,9 +202,9 @@ async fn main() -> io::Result<()> {
     };
 
     let workers: usize = if debug {
-        1
+        4
     } else {
-        std::thread::available_parallelism().unwrap().into()
+        std::thread::available_parallelism()?.into()
     };
     let backend = InMemoryBackend::builder().build();
     let server = HttpServer::new(move || {

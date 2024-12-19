@@ -38,6 +38,7 @@ mod apiv1;
 mod authorization;
 mod config;
 mod db;
+mod db_setup;
 mod errors;
 mod models;
 mod openid;
@@ -62,10 +63,21 @@ struct CommandLineArgs {
     /// Note: currently there is no difference.
     #[arg(short, long, default_value_t = String::from("default"))]
     cors: String,
+
+    /// Allow destructive actions to be performed to the database `ll` schema
+    /// on connection (i.e. wiping a schemathat doesn't have a version
+    /// specified).
+    ///
+    /// This will only be in effect if the server is run outside
+    /// of a TTY, and inquire cannot ask at runtime.
+    ///
+    #[arg(short, long, default_value_t = false)]
+    allow_schema_destruction: bool,
 }
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
+    panic!("Unstable");
     println!("Making LOGGER");
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Info)
@@ -126,40 +138,46 @@ async fn main() -> io::Result<()> {
 
     let stmt_text = "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users');";
 
-    log::trace!("Testing if users table exists");
     let client = pool.get().await.unwrap();
+
+    let version = db_setup::version(&client).await.unwrap_or(-1);
+    db_setup::migrate_from(&client, version, args.allow_schema_destruction)
+        .await
+        .unwrap();
+
+    log::trace!("Testing if users table exists");
     let stmt = client.prepare(stmt_text).await.unwrap();
     let rows = client.query(&stmt, &[]).await.unwrap();
     let value: bool = rows.get(0).expect("should have one row returned").get(0);
     log::debug!("Return from Postgres: {value}");
-    if !value {
-        let ans = match inquire::Confirm::new(
-            "No user table found. Would you like to initialize the database?",
-        )
-        .with_default(true)
-        .prompt()
-        {
-            Ok(res) => res,
-            Err(err) => {
-                if let InquireError::NotTTY = err {
-                    log::info!(
-                        "This is not a TTY. Initializing database by default in 5 seconds..."
-                    );
-                    ::std::thread::sleep(Duration::from_secs(5));
-                    true
-                } else {
-                    panic!("InquireError: {:?}", err);
-                }
-            }
-        };
+    // if !value {
+    //     let ans = match inquire::Confirm::new(
+    //         "No user table found. Would you like to initialize the database?",
+    //     )
+    //     .with_default(true)
+    //     .prompt()
+    //     {
+    //         Ok(res) => res,
+    //         Err(err) => {
+    //             if let InquireError::NotTTY = err {
+    //                 log::info!(
+    //                     "This is not a TTY. Initializing database by default in 5 seconds..."
+    //                 );
+    //                 ::std::thread::sleep(Duration::from_secs(5));
+    //                 true
+    //             } else {
+    //                 panic!("InquireError: {:?}", err);
+    //             }
+    //         }
+    //     };
 
-        if ans {
-            db::initdb(&client).await.unwrap();
-        }
-    }
+    //     if ans {
+    //         db::initdb(&client).await.unwrap();
+    //     }
+    // }
 
     log::debug!("Checking if users table has any entries");
-    let test_users = "SELECT EXISTS (SELECT * FROM users);";
+    let test_users = "SELECT EXISTS (SELECT * FROM users LIMIT 1);";
     log::trace!("Preparing query SELECT EXISTS (SELECT * FROM users);");
     let test_users = client.prepare(test_users).await.unwrap();
     log::trace!("Querying");

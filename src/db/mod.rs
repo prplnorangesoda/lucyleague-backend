@@ -26,12 +26,12 @@ pub async fn add_test_data(client: &Client) -> Result<(), MyError> {
     client.batch_execute(_stmt).await?;
     Ok(())
 }
-pub async fn initdb(client: &Client) -> Result<(), MyError> {
-    let _stmt = include_str!("../../sql/initdb.sql");
+// pub async fn initdb(client: &Client) -> Result<(), MyError> {
+//     let _stmt = include_str!("../../sql/initdb.sql");
 
-    client.batch_execute(_stmt).await?;
-    Ok(())
-}
+//     client.batch_execute(_stmt).await?;
+//     Ok(())
+// }
 
 pub async fn revoke_user_authorization(client: &Client, user: &User) -> Result<u64, MyError> {
     let stmt = client

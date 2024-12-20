@@ -18,6 +18,8 @@ Copyright (C) 2024 Lucy Faria and collaborators (https://lucyfaria.net)
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use std::thread;
+
 // Main execution and routes.
 use crate::config::ExampleConfig;
 use actix_cors::Cors;
@@ -65,26 +67,30 @@ struct CommandLineArgs {
     cors: String,
 
     /// Allow destructive actions to be performed to the database `ll` schema
-    /// on connection (i.e. wiping a schemathat doesn't have a version
+    /// on connection (i.e. wiping a schema that doesn't have a version
     /// specified).
     ///
     /// This will only be in effect if the server is run outside
     /// of a TTY, and inquire cannot ask at runtime.
     ///
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short = 'D', long, default_value_t = false)]
     allow_schema_destruction: bool,
 }
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    panic!("Unstable");
-    println!("Making LOGGER");
+    let args = CommandLineArgs::parse();
+    if !cfg!(debug_assertions) {
+        panic!("Unstable");
+    }
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Info)
         .env()
         .init()
         .unwrap();
-    let args = CommandLineArgs::parse();
+
+    log::warn!("Running in unstable mode");
+    thread::sleep(Duration::from_secs(5));
 
     log::debug!("example");
     let debug: bool = cfg!(feature = "debug") || cfg!(debug_assertions);

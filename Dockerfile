@@ -32,9 +32,7 @@ COPY --chown=app:app sql ./sql
 RUN cargo build
 
 # Copy environment variables
-COPY .env ./.env
-COPY .env.production ./.env.production
-COPY .env.development ./.env.development
+COPY .env* .
 EXPOSE 8080
 
 CMD ["./target/debug/lucyleague"]

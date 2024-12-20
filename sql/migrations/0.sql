@@ -4,6 +4,8 @@ CREATE TABLE ll.config (
 	version INT NOT NULL
 );
 
+INSERT INTO ll.config VALUES (0);
+
 CREATE TABLE ll.users (
 	id BIGSERIAL PRIMARY KEY,
 	steamid VARCHAR(50) UNIQUE NOT NULL,

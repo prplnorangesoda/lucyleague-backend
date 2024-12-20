@@ -1,14 +1,16 @@
 services:
   server:
-    build: .
+    build: 
+      context: .
+      dockerfile: dev.Dockerfile
     attach: true
+    tty: true
 
     ports:
       - "$SERVER_PORT:$SERVER_PORT"
     depends_on:
       db:
         condition: service_healthy
-
     develop:
       watch:
         - action: rebuild

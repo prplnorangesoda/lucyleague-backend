@@ -1,8 +1,6 @@
 # Rust as the base image (MSRV: 1.79)
 FROM rust:1.79 AS rust-builder
 #RUN cargo install cargo-build-dependencies
-RUN useradd -ms /bin/sh -u 1001 app
-USER app
 
 WORKDIR /app
 
@@ -21,7 +19,7 @@ RUN cargo install cargo-build-dependencies
 # Copy our manifests
 COPY --chown=app:app Cargo.toml Cargo.lock ./
 
-RUN cargo build-dependencies
+RUN cargo build-dependencies --release
 
 # Copy our source files
 RUN mkdir backend-src
@@ -29,10 +27,10 @@ COPY --chown=app:app src ./src
 COPY --chown=app:app sql ./sql
 
 # Build our source over our dependencies
-RUN cargo build
+RUN cargo build --release
 
 # Copy environment variables
 COPY .env* .
 EXPOSE 8080
 
-CMD ["./target/debug/lucyleague"]
+CMD ["./target/release/lucyleague"]

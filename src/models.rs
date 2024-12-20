@@ -4,7 +4,9 @@ use tokio_pg_mapper_derive::PostgresMapper;
 
 #[derive(Debug, PostgresMapper, Deserialize, Serialize)]
 #[pg_mapper(table = "config")]
-pub struct Config {}
+pub struct Config {
+    pub version: i32,
+}
 /// A user without the id / created_at.
 ///
 /// Useful if you want Postgres to generate an id automatically.

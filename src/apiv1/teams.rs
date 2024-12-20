@@ -51,15 +51,15 @@ pub async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpR
 
 #[delete("/api/v1/teamdivassocs/{team_id}")]
 pub async fn del_tda(
-    state: web::Data<AppState>,
-    path: web::Path<i64>,
-    auth_header: web::Header<AuthHeader>,
+    _state: web::Data<AppState>,
+    _path: web::Path<i64>,
+    _auth_header: web::Header<AuthHeader>,
 ) -> HttpResult {
     Ok(HttpResponse::Ok().body("example"))
 }
 
 #[get("/api/v1/teamdivassocs/{team_id}")]
-pub async fn get_team_div_assoc(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
+pub async fn get_tda(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {
     log::info!("GET /api/v1/teamdivassocs/{path}");
     let team_div_assoc_id = path.into_inner();
     if team_div_assoc_id < 0 {

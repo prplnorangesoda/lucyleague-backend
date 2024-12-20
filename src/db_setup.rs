@@ -1,4 +1,4 @@
-use std::{io::Read, path::PathBuf};
+use std::{env::current_dir, io::Read, path::PathBuf};
 
 use deadpool_postgres::Client;
 use derive_more::{Display, Error, From};
@@ -11,7 +11,6 @@ async fn destroy(client: &Client) -> Result<u64, tokio_postgres::Error> {
         .execute("DROP SCHEMA IF EXISTS ll CASCADE;", &[])
         .await
 }
-pub fn init(client: &Client) {}
 
 #[derive(Debug, Display, Error, From)]
 pub enum MigrationError {
@@ -38,16 +37,37 @@ pub async fn migrate_from(
     }
 
     use std::fs;
+    log::debug!("MIGRATION_DIR: {MIGRATION_DIR}");
+    log::debug!("CURRENT DIR: {}", current_dir().unwrap().display());
     let migration_count = fs::read_dir(MIGRATION_DIR).unwrap().count();
     let migrations = fs::read_dir(MIGRATION_DIR).unwrap();
-    let migration_idx: Vec<(i32, PathBuf)> = Vec::with_capacity(migration_count);
+    let mut migration_idx: Vec<(i32, PathBuf)> = Vec::with_capacity(migration_count);
     for entry in migrations {
         let entry = entry.unwrap();
         let path = entry.path();
-        let file_contents = fs::read(&path)?;
-        let migration = String::from_utf8_lossy(&file_contents);
+        log::trace!("MIGRATION PATH: {}", path.display());
 
-        log::debug!("Executing migration {0}: {migration}", path.display());
+        let index: i32 = match atoi::atoi(entry.file_name().as_os_str().as_encoded_bytes()) {
+            Some(i) => i,
+            None => continue,
+        };
+
+        migration_idx.push((index, path));
+    }
+    migration_idx.sort_by_key(|val| val.0);
+    for migration in migration_idx {
+        if migration.0 <= version {
+            continue;
+        }
+        let file_contents = fs::read(&migration.1)?;
+        let code = String::from_utf8_lossy(&file_contents);
+
+        log::debug!("Executing migration {0}", migration.0,);
+        log::trace!("Migration {0}: {1}", migration.0, migration.1.display());
+        client
+            .batch_execute(&code)
+            .await
+            .expect("migration execution should not fail");
     }
     Ok(())
 }
@@ -65,7 +85,7 @@ pub async fn version(client: &Client) -> Option<i32> {
         return None;
     }
 
-    let stmt = "SELECT $table_fields FROM config LIMIT 1;"
+    let stmt = "SELECT $table_fields FROM ll.config LIMIT 1;"
         .replace("$table_fields", &models::Config::sql_table_fields());
     let version = client
         .query_one(&stmt, &[])

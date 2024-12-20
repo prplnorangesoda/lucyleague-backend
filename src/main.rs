@@ -31,7 +31,6 @@ use actix_web::{web, App, HttpServer};
 use clap::Parser;
 use confik::{Configuration as _, EnvSource};
 use dotenvy::dotenv;
-use inquire::InquireError;
 use tokio::io;
 use tokio::time::Duration;
 use tokio_postgres::NoTls;
@@ -66,6 +65,9 @@ struct CommandLineArgs {
     #[arg(short, long, default_value_t = String::from("default"))]
     cors: String,
 
+    /// Should we add test data to db?
+    #[arg(long, default_value_t = false)]
+    test_data: bool,
     /// Allow destructive actions to be performed to the database `ll` schema
     /// on connection (i.e. wiping a schema that doesn't have a version
     /// specified).
@@ -84,13 +86,13 @@ async fn main() -> io::Result<()> {
         panic!("Unstable");
     }
     simple_logger::SimpleLogger::new()
-        .with_level(log::LevelFilter::Info)
+        .with_level(log::LevelFilter::Debug)
         .env()
         .init()
         .unwrap();
 
     log::warn!("Running in unstable mode");
-    thread::sleep(Duration::from_secs(5));
+    thread::sleep(Duration::from_secs(1));
 
     log::debug!("example");
     let debug: bool = cfg!(feature = "debug") || cfg!(debug_assertions);
@@ -141,75 +143,30 @@ async fn main() -> io::Result<()> {
 
     log::trace!("Creating a database pool using deadpool_postgres");
     let pool = config.pg.create_pool(None, NoTls).unwrap();
-
-    let stmt_text = "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users');";
-
     let client = pool.get().await.unwrap();
 
     let version = db_setup::version(&client).await.unwrap_or(-1);
     db_setup::migrate_from(&client, version, args.allow_schema_destruction)
         .await
-        .unwrap();
+        .expect("should be able to migrate (hint: if you are fine with database destruction, pass --allow-schema-destruction)");
 
     log::trace!("Testing if users table exists");
+    let stmt_text = "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = 'users');";
     let stmt = client.prepare(stmt_text).await.unwrap();
     let rows = client.query(&stmt, &[]).await.unwrap();
     let value: bool = rows.get(0).expect("should have one row returned").get(0);
     log::debug!("Return from Postgres: {value}");
-    // if !value {
-    //     let ans = match inquire::Confirm::new(
-    //         "No user table found. Would you like to initialize the database?",
-    //     )
-    //     .with_default(true)
-    //     .prompt()
-    //     {
-    //         Ok(res) => res,
-    //         Err(err) => {
-    //             if let InquireError::NotTTY = err {
-    //                 log::info!(
-    //                     "This is not a TTY. Initializing database by default in 5 seconds..."
-    //                 );
-    //                 ::std::thread::sleep(Duration::from_secs(5));
-    //                 true
-    //             } else {
-    //                 panic!("InquireError: {:?}", err);
-    //             }
-    //         }
-    //     };
-
-    //     if ans {
-    //         db::initdb(&client).await.unwrap();
-    //     }
-    // }
 
     log::debug!("Checking if users table has any entries");
-    let test_users = "SELECT EXISTS (SELECT * FROM users LIMIT 1);";
-    log::trace!("Preparing query SELECT EXISTS (SELECT * FROM users);");
+    let test_users = "SELECT EXISTS (SELECT * FROM ll.users LIMIT 1);";
+    log::trace!("Preparing query {test_users}");
     let test_users = client.prepare(test_users).await.unwrap();
     log::trace!("Querying");
     let rows = client.query(&test_users, &[]).await.unwrap();
     let value: bool = rows[0].get(0);
 
     if !value {
-        let ans = match inquire::Confirm::new(
-            "Users table is empty. Would you like to initialize it with some test data?",
-        )
-        .with_default(false)
-        .prompt()
-        {
-            Ok(res) => res,
-            Err(err) => {
-                if let InquireError::NotTTY = err {
-                    log::info!("This is not a TTY. Not adding test data. \n\
-                    (If you are in docker, run this service via `docker compose run server` to initialize this server in a TTY.)");
-                    false
-                } else {
-                    panic!("InquireError: {:?}", err);
-                }
-            }
-        };
-
-        if ans {
+        if args.test_data {
             db::add_test_data(&client).await.unwrap();
         }
     }
@@ -222,7 +179,7 @@ async fn main() -> io::Result<()> {
     let cors: fn() -> Cors = match args.cors.as_str() {
         "permissive" => Cors::permissive,
         "default" => Cors::permissive,
-        _ => panic!("invalid argument provided to --cors"),
+        _ => panic!("invalid argument provided to --cors: {}", &args.cors),
     };
 
     let workers: usize = if debug {
@@ -255,7 +212,7 @@ async fn main() -> io::Result<()> {
                 root_user_steamid: config.root_user_steamid.clone(),
             }))
             .service(teams::get_team)
-            .service(teams::get_team_div_assoc)
+            .service(teams::get_tda)
             .service(teams::post_team)
             .service(add_teams::post_team_to_league)
             .service(users::get_user_from_steamid)

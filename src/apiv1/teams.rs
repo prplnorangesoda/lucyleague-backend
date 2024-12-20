@@ -49,14 +49,15 @@ pub async fn get_team(state: web::Data<AppState>, path: web::Path<i64>) -> HttpR
     Ok(HttpResponse::Ok().json(resp))
 }
 
-#[delete("/api/v1/teamdivassocs/{team_id}")]
-pub async fn del_tda(
-    _state: web::Data<AppState>,
-    _path: web::Path<i64>,
-    _auth_header: web::Header<AuthHeader>,
-) -> HttpResult {
-    Ok(HttpResponse::Ok().body("example"))
-}
+// #[delete("/api/v1/teamdivassocs/{team_id}")]
+// pub async fn del_tda(
+//      _state: web::Data<AppState>,
+//      _path: web::Path<i64>,
+//      _auth_header: web::Header<AuthHeader>,
+// ) -> HttpResult {
+//     log::debug!("OK!");
+//     Ok(HttpResponse::Ok().body("example"))
+// }
 
 #[get("/api/v1/teamdivassocs/{team_id}")]
 pub async fn get_tda(state: web::Data<AppState>, path: web::Path<i64>) -> HttpResult {

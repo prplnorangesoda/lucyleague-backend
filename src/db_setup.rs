@@ -22,8 +22,11 @@ pub enum MigrationError {
 static MIGRATION_DIR: &str = "./sql/migrations";
 
 use MigrationError::*;
+
+/// Migrate from a specified database version.
 ///
-///
+/// If 'version' is < 0, errors, unless
+/// allow_schema_destruction is true.
 pub async fn migrate_from(
     client: &Client,
     version: i32,
@@ -85,8 +88,11 @@ pub async fn version(client: &Client) -> Option<i32> {
         return None;
     }
 
-    let stmt = "SELECT $table_fields FROM ll.config LIMIT 1;"
-        .replace("$table_fields", &models::Config::sql_table_fields());
+    let stmt = "SELECT $table_fields FROM ll.config LIMIT 1;".replacen(
+        "$table_fields",
+        &models::Config::sql_table_fields(),
+        1,
+    );
     let version = client
         .query_one(&stmt, &[])
         .await

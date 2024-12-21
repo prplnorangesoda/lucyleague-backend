@@ -48,6 +48,6 @@ impl User {
         if self.check_has_permission(permission) {
             return;
         }
-        self.permissions += permission.bits();
+        self.permissions |= permission.bits();
     }
 }

@@ -82,17 +82,12 @@ struct CommandLineArgs {
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     let args = CommandLineArgs::parse();
-    if !cfg!(debug_assertions) {
-        panic!("Unstable");
-    }
+
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Debug)
         .env()
         .init()
         .unwrap();
-
-    log::warn!("Running in unstable mode");
-    thread::sleep(Duration::from_secs(1));
 
     log::debug!("example");
     let debug: bool = cfg!(feature = "debug") || cfg!(debug_assertions);

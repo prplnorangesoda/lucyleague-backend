@@ -22,7 +22,7 @@ pub struct MiniUser {
 ///
 ///
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "users")] // singular 'user' is a keyword..
+#[pg_mapper(table = "ll.users")] // singular 'user' is a keyword..
 pub struct User {
     /// Postgres' Primary Key, for all intents and purposes use `steamid`.
     pub id: i64,
@@ -52,7 +52,7 @@ pub struct MiniLeague {
     pub is_hidden: bool,
 }
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "division_admins")]
+#[pg_mapper(table = "ll.division_admins")]
 pub struct DivisionAdmin {
     pub id: i64,
     pub divisionid: i64,
@@ -68,7 +68,7 @@ pub struct WrappedDivisionAdmin {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "divisions")]
+#[pg_mapper(table = "ll.divisions")]
 pub struct Division {
     pub id: i64,
     pub prio: i32,
@@ -78,7 +78,7 @@ pub struct Division {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "leagues")]
+#[pg_mapper(table = "ll.leagues")]
 pub struct League {
     pub id: i64,
     pub name: String,
@@ -88,7 +88,7 @@ pub struct League {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "teams")]
+#[pg_mapper(table = "ll.teams")]
 pub struct MiniTeam {
     pub owner_id: i64,
     pub team_name: String,
@@ -96,7 +96,7 @@ pub struct MiniTeam {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "teams")]
+#[pg_mapper(table = "ll.teams")]
 pub struct Team {
     pub id: i64,
     pub owner_id: i64,
@@ -106,7 +106,7 @@ pub struct Team {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize, Clone)]
-#[pg_mapper(table = "userTeamAssociation")]
+#[pg_mapper(table = "ll.userTeamAssociation")]
 pub struct UserTeam {
     pub id: i64,
     pub teamdivid: i64,
@@ -117,7 +117,7 @@ pub struct UserTeam {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "teamDivAssociations")]
+#[pg_mapper(table = "ll.teamDivAssociations")]
 pub struct TeamDivAssociation {
     pub id: i64,
     pub roster_name: Option<String>,
@@ -130,7 +130,7 @@ pub struct TeamDivAssociation {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "team_invites")]
+#[pg_mapper(table = "ll.team_invites")]
 pub struct TeamInvite {
     pub id: i64,
     pub leagueid: i64,
@@ -141,7 +141,7 @@ pub struct TeamInvite {
 }
 
 #[derive(Debug, Deserialize, PostgresMapper, Serialize)]
-#[pg_mapper(table = "authorization")]
+#[pg_mapper(table = "ll.authorization")]
 pub struct Authorization {
     pub userid: i64,
     pub token: String,

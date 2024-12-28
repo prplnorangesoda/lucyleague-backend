@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub async fn add_division(client: &Client, division: MiniDivision) -> Result<Division, MyError> {
-    let _stmt = "INSERT INTO divisions(leagueid, name, prio, created_at) VALUES ($1, $2, 1, $3) RETURNING $table_fields"
+    let _stmt = "INSERT INTO ll.divisions(leagueid, name, prio, created_at) VALUES ($1, $2, 1, $3) RETURNING $table_fields"
         .replace("$table_fields", &Division::sql_table_fields());
 
     let stmt = client.prepare(&_stmt).await?;
@@ -36,7 +36,7 @@ pub async fn get_admins_for_div_id_wrapped(
     // TODO: optimize this with a join
 
     let stmt = client
-        .prepare("SELECT users.username , users.avatarurl FROM users WHERE id=$1")
+        .prepare("SELECT users.username , users.avatarurl FROM ll.users WHERE id=$1")
         .await?;
 
     let mut ret: Vec<WrappedDivisionAdmin> = Vec::new();
@@ -55,7 +55,7 @@ pub async fn get_admins_for_div_id(
     client: &Client,
     divisionid: i64,
 ) -> Result<Vec<DivisionAdmin>, MyError> {
-    let _stmt = "SELECT $table_fields FROM division_admins WHERE divisionid=$1";
+    let _stmt = "SELECT $table_fields FROM ll.division_admins WHERE divisionid=$1";
     let _stmt = _stmt.replace("$table_fields", &DivisionAdmin::sql_table_fields());
     let stmt = client.prepare(&_stmt).await?;
 
@@ -74,7 +74,7 @@ pub async fn get_teamassociations_for_div_id(
     client: &Client,
     divisionid: i64,
 ) -> Result<Vec<TeamDivAssociation>, MyError> {
-    let _stmt = "SELECT $table_fields FROM teamDivAssociations WHERE divisionid=$1";
+    let _stmt = "SELECT $table_fields FROM ll.teamDivAssociations WHERE divisionid=$1";
     let _stmt = _stmt.replace("$table_fields", &TeamDivAssociation::sql_table_fields());
     let stmt = client.prepare(&_stmt).await?;
 
@@ -99,7 +99,7 @@ pub async fn get_teams_for_div_id(
     divisionid: i64,
 ) -> Result<Vec<DeepTeamDivAssociation>, MyError> {
     let assocs = get_teamassociations_for_div_id(client, divisionid).await?;
-    let _stmt = "SELECT $table_fields FROM teams WHERE id=$1"
+    let _stmt = "SELECT $table_fields FROM ll.teams WHERE id=$1"
         .replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await?;
 

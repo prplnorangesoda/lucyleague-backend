@@ -13,7 +13,7 @@ pub async fn get_teams_with_divisionid(
     client: &Client,
     divisionid: i64,
 ) -> Result<Vec<TeamDivAssociation>, MyError> {
-    let _stmt = "SELECT $table_fields FROM teamDivAssociations WHERE divisionid=$1";
+    let _stmt = "SELECT $table_fields FROM ll.teamDivAssociations WHERE divisionid=$1";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -30,7 +30,7 @@ pub async fn get_divs_for_league_id(
     client: &Client,
     leagueid: i64,
 ) -> Result<Vec<Division>, MyError> {
-    let _stmt = "SELECT $table_fields FROM divisions WHERE leagueid=$1;";
+    let _stmt = "SELECT $table_fields FROM ll.divisions WHERE leagueid=$1;";
     let _stmt = _stmt.replace("$table_fields", &Division::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -45,7 +45,7 @@ pub async fn get_divs_for_league_id(
 }
 
 pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
-    let _stmt = "SELECT $table_fields FROM leagues;";
+    let _stmt = "SELECT $table_fields FROM ll.leagues;";
     let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -60,7 +60,7 @@ pub async fn get_leagues(client: &Client) -> Result<Vec<League>, MyError> {
 
 pub async fn get_league_from_id(client: &Client, leagueid: i64) -> Result<League, MyError> {
     log::debug!("Getting league {leagueid}");
-    let _stmt = "SELECT $table_fields FROM leagues WHERE id=$1;";
+    let _stmt = "SELECT $table_fields FROM ll.leagues WHERE id=$1;";
     let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
     log::debug!("Running this statement: {0}", _stmt);
     let stmt = client.prepare(&_stmt).await.unwrap();

@@ -18,7 +18,7 @@ pub async fn get_team_tdas_teamid(
     teamid: i64,
 ) -> Result<Vec<TeamDivAssociation>, MyError> {
     let sql_string = "SELECT $tda_f \
-        FROM teamDivAssociations \
+        FROM ll.teamDivAssociations \
         WHERE teamid=$1"
         .replace("$tda_f", &TeamDivAssociation::sql_table_fields());
 
@@ -39,7 +39,7 @@ pub async fn get_team_div_assoc_from_id(
     id: i64,
 ) -> Result<TeamDivAssociation, MyError> {
     let sql_string = "SELECT $table_fields \
-      FROM teamDivAssociations \
+      FROM ll.teamDivAssociations \
       WHERE id=$1"
         .replace("$table_fields", &TeamDivAssociation::sql_table_fields());
 
@@ -62,7 +62,7 @@ pub async fn add_team_div_assoc(
     teamdiv: MiniTeamDivAssociation,
 ) -> Result<TeamDivAssociation, MyError> {
     let sql_string = "INSERT INTO \
-      teamDivAssociations (roster_name, teamid, divisionid, created_at, is_private ) \
+      ll.teamDivAssociations (roster_name, teamid, divisionid, created_at, is_private ) \
       VALUES($1, $2, $3, $4, $5) \
       RETURNING $table_fields"
         .replace("$table_fields", &TeamDivAssociation::sql_table_fields());

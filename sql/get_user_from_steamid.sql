@@ -1,3 +1,3 @@
 SELECT $table_fields
-FROM users
+FROM ll.users
 WHERE steamid = $1;

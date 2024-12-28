@@ -20,7 +20,7 @@ pub async fn add_user_team_id(
     status: UserTeamAffiliation,
 ) -> Result<UserTeam, MyError> {
     let _stmt = "INSERT INTO \
-    userTeamAssociation(userid, teamdivid, created_at, affiliation) \
+    ll.userTeamAssociation(userid, teamdivid, created_at, affiliation) \
     VALUES($1, $2, $3, $4) \
     RETURNING $table_fields"
         .replace("$table_fields", &UserTeam::sql_table_fields());

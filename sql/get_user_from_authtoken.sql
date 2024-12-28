@@ -1,3 +1,3 @@
 SELECT *
-FROM authorizations
+FROM ll.authorizations
 WHERE token = $1;

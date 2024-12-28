@@ -72,9 +72,6 @@ struct CommandLineArgs {
     /// on connection (i.e. wiping a schema that doesn't have a version
     /// specified).
     ///
-    /// This will only be in effect if the server is run outside
-    /// of a TTY, and inquire cannot ask at runtime.
-    ///
     #[arg(short = 'D', long, default_value_t = false)]
     allow_schema_destruction: bool,
 }
@@ -186,7 +183,7 @@ async fn main() -> io::Result<()> {
     let server = HttpServer::new(move || {
         let cors = cors();
         // assign a rate limit, 30 per
-        let input = SimpleInputFunctionBuilder::new(Duration::from_secs(60), 30)
+        let input = SimpleInputFunctionBuilder::new(Duration::from_secs(20), 30)
             .real_ip_key()
             .build();
         let middleware = RateLimiter::builder(backend.clone(), input)

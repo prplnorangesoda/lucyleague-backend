@@ -1,4 +1,4 @@
-INSERT INTO users (
+INSERT INTO ll.users (
     steamid,
     username,
     avatarurl,

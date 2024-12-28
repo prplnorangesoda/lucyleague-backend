@@ -1,3 +1,3 @@
 SELECT $fields
-FROM authorizations
+FROM ll.authorizations
 WHERE userid = $1;

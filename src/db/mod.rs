@@ -35,7 +35,7 @@ pub async fn add_test_data(client: &Client) -> Result<(), MyError> {
 
 pub async fn revoke_user_authorization(client: &Client, user: &User) -> Result<u64, MyError> {
     let stmt = client
-        .prepare("DELETE FROM authorizations WHERE userid=$1;")
+        .prepare("DELETE FROM ll.authorizations WHERE userid=$1;")
         .await
         .unwrap();
 
@@ -46,7 +46,7 @@ pub async fn revoke_user_authorization(client: &Client, user: &User) -> Result<u
 }
 
 pub async fn get_team_from_id(client: &Client, team_id: i64) -> Result<Team, MyError> {
-    let _stmt = "SELECT $table_fields FROM teams WHERE id=$1";
+    let _stmt = "SELECT $table_fields FROM ll.teams WHERE id=$1";
     let _stmt = _stmt.replace("$table_fields", &Team::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -66,7 +66,7 @@ pub async fn get_teamdivassociation_from_id(
     client: &Client,
     assoc_id: i64,
 ) -> Result<TeamDivAssociation, MyError> {
-    let _stmt = "SELECT $table_fields FROM teamDivAssociations WHERE id=$1";
+    let _stmt = "SELECT $table_fields FROM ll.teamDivAssociations WHERE id=$1";
     let _stmt = _stmt.replace("$table_fields", &TeamDivAssociation::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -83,7 +83,7 @@ pub async fn get_teamdivassociation_from_id(
 }
 
 pub async fn add_team(client: &Client, team: &MiniTeam) -> Result<Team, MyError> {
-    let _stmt = "INSERT INTO teams(team_tag, team_name, created_at, owner_id)
+    let _stmt = "INSERT INTO ll.teams(team_tag, team_name, created_at, owner_id)
     VALUES
     ($1, $2, $3, $4)
     RETURNING 
@@ -116,7 +116,7 @@ pub async fn get_team_players(
     client: &Client,
     team: &TeamDivAssociation,
 ) -> Result<Vec<UserAndAssoc>, MyError> {
-    let _stmt = "SELECT $table_fields FROM userTeamAssociation WHERE teamdivid=$1";
+    let _stmt = "SELECT $table_fields FROM ll.userTeamAssociation WHERE teamdivid=$1";
     let _stmt = _stmt.replace("$table_fields", &UserTeam::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -145,7 +145,7 @@ pub async fn get_team_players(
 }
 
 pub async fn get_user_from_internal_id(client: &Client, userid: i64) -> Result<User, MyError> {
-    let _stmt = "SELECT $table_fields FROM users WHERE id=$1";
+    let _stmt = "SELECT $table_fields FROM ll.users WHERE id=$1";
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -160,7 +160,7 @@ pub async fn mass_get_user_from_internal_id(
     client: &Client,
     userids: &Vec<i64>,
 ) -> Result<Vec<User>, MyError> {
-    let _stmt = "SELECT $table_fields FROM users WHERE id=any($1)";
+    let _stmt = "SELECT $table_fields FROM ll.users WHERE id=any($1)";
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -179,7 +179,7 @@ pub async fn mass_get_user_from_internal_id(
 // }
 
 pub async fn add_league(client: &Client, league: MiniLeague) -> Result<League, MyError> {
-    let _stmt = "INSERT INTO leagues(name, accepting_teams, is_hidden, created_at) VALUES ($1, $2, $3, $4) RETURNING $table_fields";
+    let _stmt = "INSERT INTO ll.leagues(name, accepting_teams, is_hidden, created_at) VALUES ($1, $2, $3, $4) RETURNING $table_fields";
     let _stmt = _stmt.replace("$table_fields", &League::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -216,7 +216,7 @@ pub async fn get_user_from_auth_token(client: &Client, token: &str) -> Result<Us
         .pop()
         .ok_or(MyError::NotFound)?;
 
-    let _stmt = "SELECT $table_fields FROM users WHERE id=$1;";
+    let _stmt = "SELECT $table_fields FROM ll.users WHERE id=$1;";
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -301,10 +301,10 @@ pub async fn get_rosters_for_user_id(
 ) -> Result<Vec<SuperDeepTeamDivAssociation>, MyError> {
     let sql_string = "SELECT 
         $tda, $t, $u
-        FROM userTeamAssociation
-            INNER JOIN teamDivAssociations 
+        FROM ll.userTeamAssociation
+            INNER JOIN ll.teamDivAssociations 
                 ON userTeamAssociation.teamdivid = teamDivAssociations.id
-            INNER JOIN teams
+            INNER JOIN ll.teams
                 ON teamDivAssociations.teamid = teams.id
         WHERE userTeamAssociation.userid=$1
     ";
@@ -337,7 +337,7 @@ pub async fn get_ownerships_for_user_id(
     let sql_string = "SELECT 
         $table_fields
     FROM 
-        teams
+        ll.teams
     WHERE
         owner_id=$1
     ";
@@ -372,7 +372,7 @@ pub async fn set_user_permissions(
     user: &User,
     permissions: i64,
 ) -> Result<User, MyError> {
-    let _stmt = "UPDATE users SET permissions=$1 WHERE id=$2 RETURNING $table_fields";
+    let _stmt = "UPDATE ll.users SET permissions=$1 WHERE id=$2 RETURNING $table_fields";
     let _stmt = _stmt.replace("$table_fields", &User::sql_table_fields());
     let stmt = client.prepare(&_stmt).await.unwrap();
 
@@ -419,7 +419,10 @@ pub async fn add_user(client: &Client, user_info: MiniUser) -> Result<User, MyEr
 }
 
 pub async fn get_user_count(client: &Client) -> Result<i64, MyError> {
-    let stmt = client.prepare("SELECT COUNT(*) FROM users").await.unwrap();
+    let stmt = client
+        .prepare("SELECT COUNT(*) FROM ll.users")
+        .await
+        .unwrap();
 
     let resp: i64 = client.query_one(&stmt, &[]).await?.get(0);
 
